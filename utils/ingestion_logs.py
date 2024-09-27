@@ -4,56 +4,27 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
 
 INGESTION_TABLE_PATH = "/mnt/adlscontrol/ingestion_logs/"
-CATALOG = "control"
-SCHEMA = "logs"
-TABLE = "ingestion_logs"
 
-# def check_table_exists(table_path):
-#     """
-#     Verifica se a tabela já existe no caminho especificado.
-
-#     Args:
-#         table_path (str): Caminho onde a tabela deveria estar.
-
-#     Returns:
-#         bool: Retorna True se a tabela existir, caso contrário False.
-#     """
-#     try:
-#         # Tentativa de ler a tabela no Delta Lake
-#         spark.read.format("delta").load(table_path)
-#         return True
-#     except:
-#         return False
-
-def log_ingestion_event(run_id, status, log_message, nr_processed_urls):
+def log_ingestion_event(run_id, url, data_format, status, log_message):
     """
-    Registra um evento de ingestão na tabela de controle de ingestão.
+    Registra um evento durante a ingestão de dados na tabela de controle de ingestão. 
+    A cada URL processada, um novo registro é criado na tabela de controle de ingestão, 
+    indicando o status da operação, o horário da ocorrência e outras informações.
 
     Args:
-        run_id (str): Run ID da job de ingestão.
-        status (str): Status da operação ('Sucesso', 'Falha', etc.).
+        run_id (str): ID único de execução do notebook.
+        url (str): URL da fonte de dados que gerou o evento.
+        data_format (str): Formato do arquivo de dados ingerido ('PDF', 'HTML').
+        status (str): Status da operação ('Sucesso', 'Falha', 'Aviso').
         log_message (str): Mensagem de log.
-        nr_processed_urls (int): Número de URLs processadas.
     
     Returns:
         None
     """
     try:
-        # if not check_table_exists(INGESTION_TABLE_PATH):
-        #     table_full_name = f"{CATALOG}.{SCHEMA}.{TABLE}"
-
-        #     create_table_query = f"""
-        #     CREATE TABLE IF NOT EXISTS {table_full_name} 
-        #     USING DELTA 
-        #     LOCATION '{f'{INGESTION_TABLE_PATH}'}'
-        #     """
-
-        #     # Criar a tabela no catálogo
-        #     spark.sql(create_table_query)
-
         datetime_now = datetime.now()
-        new_entry = [(run_id, datetime_now, status, log_message, nr_processed_urls)]
-        df = spark.createDataFrame(new_entry, ["id_job_run", "dt_ingestion", "ds_status", "ds_log_message", "nr_processed_urls"])
+        new_entry = [(run_id, datetime_now, url, data_format, status, log_message)]
+        df = spark.createDataFrame(new_entry, ["id_run", "dt_ocurrence", "ds_affected_url", "ds_data_format", "ds_status", "ds_log_message"])
         df.write.format("delta").option("header", "true").mode("append").save(INGESTION_TABLE_PATH)
         print(f"Novo log de ingestão salvo com ID: {run_id}")        
     
