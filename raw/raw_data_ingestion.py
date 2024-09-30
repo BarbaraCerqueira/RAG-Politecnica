@@ -269,21 +269,3 @@ for i, url in enumerate(urls_to_update):
 
     # Intervalo entre requisições
     time.sleep(1)
-
-# COMMAND ----------
-
-# import requests
-
-# # URL que você quer testar
-# url = "https://poli.ufrj.br/a-politecnica/estrutura-organizacional/congregacao-da-politecnica/resolucao/2005-2009/"
-
-# proxies = {
-#     "http": "http://10.10.1.10:3128",
-#     "https": "https://10.10.1.10:1080",
-# }
-
-# try:
-#     response = requests.get(url, headers=headers, proxies=proxies, timeout=10)
-#     print(f"Código de Status: {response.status_code}")
-# except requests.exceptions.RequestException as e:
-#     print(f"Erro na requisição: {e}")
