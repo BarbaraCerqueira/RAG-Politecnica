@@ -11,6 +11,10 @@ import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+
+etl_folder_path = './../../etl-pipeline/'
+sys.path.append(etl_folder_path)
+
 from pyspark.sql.utils import AnalysisException
 from pyspark.sql.window import Window
 from pyspark.sql.functions import col, lit, when, row_number

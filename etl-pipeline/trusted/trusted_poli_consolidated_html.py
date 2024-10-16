@@ -5,8 +5,12 @@
 
 # COMMAND ----------
 
+import sys
 from bs4 import BeautifulSoup
 from multiprocessing.pool import ThreadPool
+
+etl_folder_path = './../../etl-pipeline/'
+sys.path.append(etl_folder_path)
 
 from delta.tables import DeltaTable
 from pyspark.sql import Row

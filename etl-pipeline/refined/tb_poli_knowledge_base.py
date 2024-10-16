@@ -5,6 +5,7 @@
 
 # COMMAND ----------
 
+import sys
 import time
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -14,6 +15,8 @@ from pyspark.sql import Window, Row
 from pyspark.sql.types import ArrayType, StringType, FloatType
 from pyspark.sql.functions import col, lit, when, length, udf, explode, row_number, xxhash64, coalesce, add_months, current_date, regexp_replace, current_timestamp, max as _max
 
+etl_folder_path = './../../etl-pipeline/'
+sys.path.append(etl_folder_path)
 from utils import list_all_files, upsert_to_delta_lake
 
 # COMMAND ----------
