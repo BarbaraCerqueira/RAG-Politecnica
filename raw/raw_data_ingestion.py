@@ -219,7 +219,7 @@ try:
         .collect()  
     )
 
-    print("Tabela de controle de ingestão lida com sucesso. Foram encontradas URLs que foram modificadas depois da última ingestão bem sucedida.")
+    print(f"Tabela de controle de ingestão lida com sucesso. Foram encontradas {len(urls_to_update)} URLs que foram modificadas depois da última ingestão bem sucedida.")
 
 except AnalysisException as e:
     # Obter todas as urls elegíveis contidas na tabela de controle de sitemap
