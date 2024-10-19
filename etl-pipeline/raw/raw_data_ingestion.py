@@ -11,6 +11,10 @@ import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+
+etl_folder_path = './../../etl-pipeline/'
+sys.path.append(etl_folder_path)
+
 from pyspark.sql.utils import AnalysisException
 from pyspark.sql.window import Window
 from pyspark.sql.functions import col, lit, when, row_number
@@ -219,7 +223,7 @@ try:
         .collect()  
     )
 
-    print("Tabela de controle de ingestão lida com sucesso. Foram encontradas URLs que foram modificadas depois da última ingestão bem sucedida.")
+    print(f"Tabela de controle de ingestão lida com sucesso. Foram encontradas {len(urls_to_update)} URLs que foram modificadas depois da última ingestão bem sucedida.")
 
 except AnalysisException as e:
     # Obter todas as urls elegíveis contidas na tabela de controle de sitemap
