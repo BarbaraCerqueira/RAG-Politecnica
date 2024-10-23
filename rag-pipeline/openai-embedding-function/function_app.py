@@ -15,39 +15,34 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         req_body = req.get_json()
         values = req_body.get("values")
 
-        # Preparar a resposta com os embeddings
-        response_values = []
+        # Pegar os parâmetros do modelo e dimensões dos headers
+        model = req.headers.get("model", "text-embedding-3-large")
+        dimensions = int(req.headers.get("dimensions", 1024))
 
+        # Preparar uma lista de textos e seus recordIds
+        texts = []
+        record_ids = []
         for item in values:
             record_id = item.get("recordId")
-            text = item.get("data").get("ds_content_document")
-
+            text = item.get("data").get("text")
             if text:
-                embedding = get_embeddings(text)
+                texts.append(text)
+                record_ids.append(record_id)
 
-                if embedding:
-                    response_values.append({
-                        "recordId": record_id,
-                        "data": {
-                            "vc_content_embedding": embedding
-                        },
-                        "errors": None,
-                        "warnings": None
-                    })
-                else:
-                    response_values.append({
-                        "recordId": record_id,
-                        "data": {},
-                        "errors": [{"message": "Erro ao gerar embedding"}],
-                        "warnings": None
-                    })
-            else:
-                response_values.append({
-                    "recordId": record_id,
-                    "data": {},
-                    "errors": [{"message": "O campo 'ds_content_document' está vazio"}],
-                    "warnings": None
-                })
+        # Gerar os embeddings para todos os textos em batch
+        embeddings = get_embeddings(texts, model, dimensions)
+
+        # Preparar a resposta com os embeddings mapeados de volta aos recordIds
+        response_values = []
+        for record_id, embedding in zip(record_ids, embeddings):
+            response_values.append({
+                "recordId": record_id,
+                "data": {
+                    "embedding": embedding
+                },
+                "errors": None,
+                "warnings": None
+            })
 
         # Montar a resposta no formato esperado pelo Cognitive Search
         return func.HttpResponse(
@@ -55,6 +50,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
             status_code=200
         )
+
     except Exception as e:
         logging.error(f"Erro ao processar requisição: {e}")
         return func.HttpResponse(
