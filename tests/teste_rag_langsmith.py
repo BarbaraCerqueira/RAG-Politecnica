@@ -1,5 +1,6 @@
 import os
 import time
+from functools import lru_cache
 
 os.environ["AZURESEARCH_FIELDS_ID"] = "chunk_id"
 os.environ["AZURESEARCH_FIELDS_CONTENT"] = "chunk"
@@ -33,7 +34,6 @@ SEARCH_INDEX_NAME = "poligpt-index"
 SEARCH_TYPE = "hybrid"
 NUM_DOCS_TO_RETRIEVE = 5
 
-
 def setup_llm(
     temperature: float = 0.3
 ) -> ChatOpenAI:
@@ -47,6 +47,7 @@ def setup_llm(
 
     return llm
 
+@lru_cache(maxsize=1)
 def setup_retriever(
     search_type: str = "hybrid", 
     k: int = 3
@@ -66,12 +67,7 @@ def setup_retriever(
         search_type=search_type
     )
 
-    retriever = AzureSearchVectorStoreRetriever(
-        name="AzureSearchRetriever",
-        vectorstore=vector_store,
-        search_type=search_type,
-        k=k
-    )
+    retriever = vector_store.as_retriever()
 
     return retriever
 
@@ -170,8 +166,8 @@ def agent_orchestrator(
 if __name__ == '__main__':
     session_id = "001"
 
-    query = "Como me inscrevo numa materia?"
-    # query = "Qual e meu nome?"
+    # query = "Como me inscrevo numa materia?"
+    query = "Qual e meu nome?"
 
     chat_history = [
         {"role": "user", "content": "Oi! Meu nome é Julia."},
