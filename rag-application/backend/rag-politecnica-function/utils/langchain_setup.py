@@ -1,7 +1,8 @@
 from langchain.chains import ConversationChain, LLMChain
 from langchain_core.prompts import PromptTemplate
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory, CosmosDBChatMessageHistory
 from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor
 from langchain_community.retrievers import AzureAISearchRetriever
 from utils import get_secret
 
@@ -23,6 +24,10 @@ def get_chain(conversation_history, text_generation_model):
         service_endpoint=search_service_endpoint,
         index_name=search_index_name,
         api_key=get_secret("AzureSearchApiKey")
+    )
+
+    memory = CosmosDBChatMessageHistory(
+        
     )
 
     # Configura a memória da conversa
