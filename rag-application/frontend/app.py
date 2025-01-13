@@ -23,7 +23,7 @@ from langchain_community.vectorstores.azuresearch import AzureSearch, AzureSearc
 # Ajuste o título, layout e ícone da aba do navegador
 st.set_page_config(
     page_title="PoliGPT",
-    page_icon="imagens/poligpt_icon.ico",
+    page_icon="images/poligpt_icon.ico",
     layout="centered"
 )
 
