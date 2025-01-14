@@ -23,7 +23,7 @@ from langchain_community.vectorstores.azuresearch import AzureSearch, AzureSearc
 # Ajuste o título, layout e ícone da aba do navegador
 st.set_page_config(
     page_title="PoliGPT",
-    page_icon="images/poligpt_icon.ico",
+    page_icon="images/poligpt_icon.png",
     layout="centered"
 )
 
@@ -239,14 +239,14 @@ def main():
         # Caso não encontre o arquivo, use um texto
         st.markdown(f"PoliGPT")
 
-    # st.title("PoliGPT - Chatbot RAG")
-    st.markdown(
-        """
+    st.title("Seu assistente virtual acadêmico")
+    # st.markdown(
+    #     """
         
-        ## PoliGPT - Seu assistente virtual acadêmico 
-        """,
-        unsafe_allow_html=True
-    )
+    #     ## PoliGPT - Seu assistente virtual acadêmico 
+    #     """,
+    #     unsafe_allow_html=True
+    # )
 
     # Inicialização do histórico de chat na sessão
     if "chat_history" not in st.session_state:
