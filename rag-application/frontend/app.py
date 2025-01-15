@@ -4,6 +4,10 @@ import uuid
 import streamlit as st
 from pathlib import Path
 
+os.environ["AZURESEARCH_FIELDS_ID"] = "chunk_id"
+os.environ["AZURESEARCH_FIELDS_CONTENT"] = "chunk"
+os.environ["AZURESEARCH_FIELDS_CONTENT_VECTOR"] = "vector"
+
 # Importações do Azure e LangChain
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
@@ -20,25 +24,20 @@ from langchain_community.vectorstores.azuresearch import AzureSearch, AzureSearc
 # CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
 #################################
 
-# Ajuste o título, layout e ícone da aba do navegador
+# Ajustar o título, layout e ícone da aba do navegador
 st.set_page_config(
     page_title="PoliGPT",
     page_icon="images/poligpt_icon.png",
     layout="centered"
 )
 
-# # Gerar id da sessão
-# st.session_state.id = uuid.uuid4()
+# Gerar id da sessão
+st.session_state.id = uuid.uuid4()
 
-# # Ajuste se quiser trabalhar com variáveis de ambiente
-# os.environ["AZURESEARCH_FIELDS_ID"] = "chunk_id"
-# os.environ["AZURESEARCH_FIELDS_CONTENT"] = "chunk"
-# os.environ["AZURESEARCH_FIELDS_CONTENT_VECTOR"] = "vector"
-
-# Ajuste o caminho para o logo
+# Caminho para o logo
 LOGO_PATH = "images/poligpt_logo.png"
 
-# Substitua pela sua URL do Key Vault
+# URL do Key Vault
 kv_uri = "https://kv-poligpt-dev-eastus2.vault.azure.net"
 
 # Inicializa credenciais do Azure Key Vault
@@ -61,140 +60,140 @@ SEARCH_INDEX_NAME = "poligpt-index"
 SEARCH_TYPE = "hybrid"
 NUM_DOCS_TO_RETRIEVE = 5
 
-# #################################
-# # FUNÇÕES AUXILIARES
-# #################################
+#################################
+# FUNÇÕES AUXILIARES
+#################################
 
-# @st.cache_resource
-# def setup_llm(
-#     temperature: float = MODEL_TEMPERATURE
-# ) -> ChatOpenAI:
-#     """
-#     Configura o modelo de linguagem (LLM) com parâmetros específicos.
-#     """
-#     llm = ChatOpenAI(
-#         model=COMPLETION_MODEL,
-#         api_key=OPENAI_API_KEY,
-#         streaming=False,
-#         temperature=temperature
-#     )
-#     return llm
+@st.cache_resource
+def setup_llm(
+    temperature: float = MODEL_TEMPERATURE
+) -> ChatOpenAI:
+    """
+    Configura o modelo de linguagem (LLM) com parâmetros específicos.
+    """
+    llm = ChatOpenAI(
+        model=COMPLETION_MODEL,
+        api_key=OPENAI_API_KEY,
+        streaming=False,
+        temperature=temperature
+    )
+    return llm
 
-# @st.cache_resource
-# def setup_retriever(
-#     search_type: str = "hybrid", 
-#     k: int = 3
-# ) -> AzureSearchVectorStoreRetriever:
-#     """
-#     Configura o objeto de busca vetorial no Azure Search.
-#     """
-#     embeddings = OpenAIEmbeddings(
-#         model=EMBEDDING_MODEL,
-#         openai_api_key=OPENAI_API_KEY, 
-#         dimensions=EMBEDDING_DIMENSIONS
-#     )
+@st.cache_resource
+def setup_retriever(
+    search_type: str = "hybrid", 
+    k: int = 3
+) -> AzureSearchVectorStoreRetriever:
+    """
+    Configura o objeto de busca vetorial no Azure Search.
+    """
+    embeddings = OpenAIEmbeddings(
+        model=EMBEDDING_MODEL,
+        openai_api_key=OPENAI_API_KEY, 
+        dimensions=EMBEDDING_DIMENSIONS
+    )
 
-#     vector_store = AzureSearch(
-#         azure_search_endpoint=AZURE_SEARCH_ENDPOINT,
-#         azure_search_key=AZURE_SEARCH_ADMIN_KEY,
-#         index_name=SEARCH_INDEX_NAME,
-#         embedding_function=embeddings.embed_query,
-#         search_type=search_type
-#     )
+    vector_store = AzureSearch(
+        azure_search_endpoint=AZURE_SEARCH_ENDPOINT,
+        azure_search_key=AZURE_SEARCH_ADMIN_KEY,
+        index_name=SEARCH_INDEX_NAME,
+        embedding_function=embeddings.embed_query,
+        search_type=search_type
+    )
 
-#     retriever = AzureSearchVectorStoreRetriever(
-#         name="AzureSearchRetriever",
-#         vectorstore=vector_store,
-#         search_type=search_type,
-#         k=k
-#     )
+    retriever = AzureSearchVectorStoreRetriever(
+        name="AzureSearchRetriever",
+        vectorstore=vector_store,
+        search_type=search_type,
+        k=k
+    )
 
-#     return retriever
+    return retriever
 
-# def agent_orchestrator(
-#     query: str, 
-#     chat_history: list,
-#     session_id: str
-# ) -> str:
-#     """
-#     Orquestra a chamada ao RAG Agent, incluindo a ferramenta de busca
-#     no Azure Search, e retorna a resposta final do LLM.
-#     """
-#     # Inicializa memória e LLM
-#     memory = MemorySaver()
-#     llm = setup_llm(temperature=MODEL_TEMPERATURE)
+def agent_orchestrator(
+    query: str, 
+    chat_history: list,
+    session_id: str
+) -> str:
+    """
+    Orquestra a chamada ao RAG Agent, incluindo a ferramenta de busca
+    no Azure Search, e retorna a resposta final do LLM.
+    """
+    # Inicializa memória e LLM
+    memory = MemorySaver()
+    llm = setup_llm(temperature=MODEL_TEMPERATURE)
 
-#     # Inicializa retriever
-#     retriever = setup_retriever(search_type=SEARCH_TYPE, k=NUM_DOCS_TO_RETRIEVE)
+    # Inicializa retriever
+    retriever = setup_retriever(search_type=SEARCH_TYPE, k=NUM_DOCS_TO_RETRIEVE)
 
-#     # Define a tool para busca vetorial
-#     retriever_tool = create_retriever_tool(
-#         retriever = retriever,
-#         name = "buscar_poli_info",
-#         description = "Busca e retorna informações relacionadas à Escola Politécnica da UFRJ."
-#     )
+    # Define a tool para busca vetorial
+    retriever_tool = create_retriever_tool(
+        retriever = retriever,
+        name = "buscar_poli_info",
+        description = "Busca e retorna informações relacionadas à Escola Politécnica da UFRJ."
+    )
 
-#     # Lista de ferramentas disponíveis para o agente
-#     tools = [retriever_tool]
+    # Lista de ferramentas disponíveis para o agente
+    tools = [retriever_tool]
 
-#     # Mensagem de sistema para direcionar o comportamento do modelo
-#     system_message = SystemMessage(
-#         content="""
-#         Você é o PoliGPT, um assistente virtual da Escola Politécnica da Universidade Federal do Rio de Janeiro (UFRJ),
-#         que auxilia alunos, professores, funcionários e outros interessados em questões acadêmicas e institucionais 
-#         relacionadas à Escola Politécnica, além de conhecimentos gerais. Quaisquer perguntas relacionadas à área acadêmica 
-#         feitas pelo usuário devem ser consideradas como referentes à Escola Politécnica, a não ser que seja explicitamente 
-#         dito o contrário. Caso não tenha informações suficientes para responder, diga que não sabe. Responda sempre na mesma 
-#         língua usada pelo usuário; caso não seja possível reconhecer a língua, use português.
-#         """
-#     )
+    # Mensagem de sistema para direcionar o comportamento do modelo
+    system_message = SystemMessage(
+        content="""
+        Você é o PoliGPT, um assistente virtual da Escola Politécnica da Universidade Federal do Rio de Janeiro (UFRJ),
+        que auxilia alunos, professores, funcionários e outros interessados em questões acadêmicas e institucionais 
+        relacionadas à Escola Politécnica, além de conhecimentos gerais. Quaisquer perguntas relacionadas à área acadêmica 
+        feitas pelo usuário devem ser consideradas como referentes à Escola Politécnica, a não ser que seja explicitamente 
+        dito o contrário. Caso não tenha informações suficientes para responder, diga que não sabe. Responda sempre na mesma 
+        língua usada pelo usuário; caso não seja possível reconhecer a língua, use português.
+        """
+    )
 
-#     # Cria o agente RAG com as ferramentas definidas
-#     agent_executor = create_react_agent(
-#         model=llm, 
-#         tools=tools, 
-#         state_modifier=system_message,
-#         checkpointer=memory
-#     )
+    # Cria o agente RAG com as ferramentas definidas
+    agent_executor = create_react_agent(
+        model=llm, 
+        tools=tools, 
+        state_modifier=system_message,
+        checkpointer=memory
+    )
 
-#     # Formata o histórico de mensagens para o agente
-#     processed_history = [system_message]  # A mensagem do sistema vai na frente
-#     for message in chat_history:
-#         content = message["content"]
-#         if message["role"] == "user":
-#             processed_history.append(HumanMessage(content=content))
-#         elif message["role"] == "ai":
-#             processed_history.append(AIMessage(content=content))
-#         else:
-#             # Mensagens inválidas ou outros roles podem ser tratados de outra forma
-#             raise ValueError("O histórico de mensagens contém mensagens inválidas.")
+    # Formata o histórico de mensagens para o agente
+    processed_history = [system_message]  # A mensagem do sistema vai na frente
+    for message in chat_history:
+        content = message["content"]
+        if message["role"] == "user":
+            processed_history.append(HumanMessage(content=content))
+        elif message["role"] == "ai":
+            processed_history.append(AIMessage(content=content))
+        else:
+            # Mensagens inválidas ou outros roles podem ser tratados de outra forma
+            raise ValueError("O histórico de mensagens contém mensagens inválidas.")
 
-#     # Adiciona a última pergunta do usuário
-#     processed_history.append(HumanMessage(content=query))
+    # Adiciona a última pergunta do usuário
+    processed_history.append(HumanMessage(content=query))
 
-#     # Remove mensagens antigas (se necessário) para não ultrapassar limite de tokens
-#     trimmed_history = trim_messages(
-#         processed_history,
-#         strategy="last",
-#         token_counter=llm,
-#         max_tokens=8192,
-#         start_on="human",
-#         end_on="human",
-#         include_system=True,
-#         allow_partial=False
-#     )
+    # Remove mensagens antigas (se necessário) para não ultrapassar limite de tokens
+    trimmed_history = trim_messages(
+        processed_history,
+        strategy="last",
+        token_counter=llm,
+        max_tokens=8192,
+        start_on="human",
+        end_on="human",
+        include_system=True,
+        allow_partial=False
+    )
 
-#     # Invoca o agente com o histórico ajustado
-#     config = {"configurable": {"thread_id": session_id}}
-#     messages = agent_executor.invoke(input={"messages": trimmed_history}, config=config)
+    # Invoca o agente com o histórico ajustado
+    config = {"configurable": {"thread_id": session_id}}
+    messages = agent_executor.invoke(input={"messages": trimmed_history}, config=config)
 
-#     # Extrai a resposta final do modelo
-#     output = messages["messages"][-1].content
-#     return output
+    # Extrai a resposta final do modelo
+    output = messages["messages"][-1].content
+    return output
 
-# #################################
-# # FUNÇÃO PRINCIPAL DA INTERFACE
-# #################################
+#################################
+# FUNÇÃO PRINCIPAL DA INTERFACE
+#################################
 
 def main():
     # CSS customizado para melhorar o layout/estilo
@@ -236,62 +235,55 @@ def main():
     if Path(LOGO_PATH).is_file():
         st.image(LOGO_PATH, use_container_width=False)
     else:
-        # Caso não encontre o arquivo, use um texto
+        # Caso não encontre o arquivo, usar um texto simples
         st.markdown(f"PoliGPT")
 
     st.title("Seu assistente virtual acadêmico")
-#     # st.markdown(
-#     #     """
-        
-#     #     ## PoliGPT - Seu assistente virtual acadêmico 
-#     #     """,
-#     #     unsafe_allow_html=True
-#     # )
 
-#     # Inicialização do histórico de chat na sessão
-#     if "chat_history" not in st.session_state:
-#         st.session_state["chat_history"] = []
+    # Inicialização do histórico de chat na sessão
+    if "chat_history" not in st.session_state:
+        st.session_state["chat_history"] = []
 
-#     # Container para exibir o histórico de mensagens
-#     with st.container():
-#         for idx, message in enumerate(st.session_state.chat_history):
-#             if message["role"] == "user":
-#                 st.markdown(
-#                     f'<div class="message user-message"><strong>Você:</strong> {message["content"]}</div>',
-#                     unsafe_allow_html=True
-#                 )
-#             elif message["role"] == "ai":
-#                 st.markdown(
-#                     f'<div class="message ai-message"><strong>PoliGPT:</strong> {message["content"]}</div>',
-#                     unsafe_allow_html=True
-#                 )
+    # Container para exibir o histórico de mensagens
+    with st.container():
+        for idx, message in enumerate(st.session_state.chat_history):
+            if message["role"] == "user":
+                st.markdown(
+                    f'<div class="message user-message"><strong>Você:</strong> {message["content"]}</div>',
+                    unsafe_allow_html=True
+                )
+            elif message["role"] == "ai":
+                st.markdown(
+                    f'<div class="message ai-message"><strong>PoliGPT:</strong> {message["content"]}</div>',
+                    unsafe_allow_html=True
+                )
 
-#     # Campo para digitar uma mensagem ao RAG
-#     prompt = st.chat_input("Escreva uma mensagem...")
+    # Campo para digitar uma mensagem ao RAG
+    prompt = st.chat_input("Escreva uma mensagem...")
 
-#     if prompt:
-#         # Armazena a mensagem do usuário
-#         st.session_state.chat_history.append({"role": "user", "content": prompt})
+    if prompt:
+        # Armazena a mensagem do usuário
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
 
-#         # Gera a resposta do modelo
-#         session_id = st.session_state.id
-#         start_time = time.time()
-#         answer = agent_orchestrator(prompt, st.session_state.chat_history, session_id)
-#         end_time = time.time()
+        # Gera a resposta do modelo
+        session_id = st.session_state.id
+        start_time = time.time()
+        answer = agent_orchestrator(prompt, st.session_state.chat_history, session_id)
+        end_time = time.time()
 
-#         # Armazena a resposta do PoliGPT
-#         st.session_state.chat_history.append({"role": "ai", "content": answer})
+        # Armazena a resposta do PoliGPT
+        st.session_state.chat_history.append({"role": "ai", "content": answer})
 
-#         # Apresenta dados de performance (opcional)
-#         execution_time = end_time - start_time
-#         st.write(f"*(Tempo de execução: {execution_time:.2f} segundos)*")
+        # Apresenta dados de performance (opcional)
+        execution_time = end_time - start_time
+        st.write(f"*(Tempo de execução: {execution_time:.2f} segundos)*")
 
-#         # Força a atualização do layout
-#         st.rerun()
+        # Força a atualização do layout
+        st.rerun()
 
-# #################################
-# # EXECUÇÃO DO APLICATIVO STREAMLIT
-# #################################
+#################################
+# EXECUÇÃO DO APLICATIVO STREAMLIT
+#################################
 
 if __name__ == "__main__":
     main()

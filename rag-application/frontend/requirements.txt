@@ -1,7 +1,7 @@
 streamlit==1.41.1
 azure-identity==1.19.0
 azure-keyvault-secrets==4.7.0
-# azure-search-documents==11.5.2
+azure-search-documents==11.5.2
 langchain-core==0.3.15
 langchain-openai==0.2.6
 langchain-community==0.3.5
