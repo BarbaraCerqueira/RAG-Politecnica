@@ -37,6 +37,13 @@ if "id" not in st.session_state:
 LOGO_PATH = "images/poligpt_logo.png"
 ICON_PATH = "images/poligpt_icon.png"
 
+# # URL do Key Vault
+# kv_uri = "https://kv-poligpt-dev-eastus2.vault.azure.net"
+
+# # Inicializa credenciais do Azure Key Vault
+# credential = DefaultAzureCredential()
+# client = SecretClient(vault_url=kv_uri, credential=credential)
+
 # Buscar valores das variáveis de ambiente
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT")
@@ -167,11 +174,20 @@ def agent_orchestrator(query: str, chat_history: list, session_id: str) -> str:
     )
 
     config = {"configurable": {"thread_id": session_id}}
-    messages = agent_executor.invoke(input={"messages": trimmed_history}, config=config)
+    # messages = agent_executor.invoke(input={"messages": trimmed_history}, config=config)
+
+    events =[]
+    for event in agent_executor.stream(
+        input={"messages": trimmed_history},
+        stream_mode="values",
+        config=config,
+    ):
+        events.append(event)
 
     # Obtem a resposta final
-    output = messages["messages"][-1].content
-    return output
+    # output = messages["messages"][-1].content
+    output = events[-1]["messages"][-1].content
+    return output, events
 
 def show_message(role, content):
     with st.chat_message(role, avatar=f"images/{role}_avatar.png"):
@@ -184,7 +200,7 @@ def handle_user_message(user_input):
     # Gera resposta do agente
     with st.spinner("Gerando resposta..."):
         start_time = time.time()
-        answer = agent_orchestrator(
+        answer, events = agent_orchestrator(
             query=user_input,
             chat_history=st.session_state.chat_history,
             session_id=st.session_state.id
@@ -195,9 +211,17 @@ def handle_user_message(user_input):
     append_chat_history(role="assistant", content=answer)
     show_message(role="assistant", content=answer)
 
+    expander = st.expander("Ver todas as etapas")
+    expander.write(events)
+    expander = st.expander("Ver histórico")
+    expander.write(st.session_state.chat_history)
+
     # Mostra tempo de execução
     exec_time = end_time - start_time
-    st.caption(f"*(Tempo de geração da resposta: {exec_time:.2f} segundos)*")
+    st.write(f"*(Tempo de geração da resposta: {exec_time:.2f} segundos)*")
+
+    if len(events) > 2:
+        st.write(f"*(O agente executou {len(events)-3} chamada(s) a ferramentas de busca para obter a resposta final)*")
 
 
 # ======================== PÁGINAS DA APLICAÇÃO ========================
@@ -228,7 +252,7 @@ def home_page():
             user_button_message = "Qual é o procedimento para registrar um estágio?"
 
         # Campo de input do usuário
-        user_input = st.chat_input(placeholder="Escreva uma mensagem...", max_chars=10000)
+        user_input = st.chat_input(placeholder="Escreva uma mensagem...", max_chars=8192)
 
         latest_input = user_input or user_button_message
         if latest_input:
@@ -296,7 +320,7 @@ def main():
             options=["Chat", 'Settings', 'Evaluation'], 
             icons=['chat', 'gear', 'file-earmark-bar-graph'], 
             menu_icon="book-half", 
-            default_index=0, 
+            default_index=1, 
             styles={"container": {"padding": "0!important", "background-color": "transparent"}}
         )
 
