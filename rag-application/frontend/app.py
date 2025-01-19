@@ -29,6 +29,15 @@ st.set_page_config(
     layout="centered"
 )
 
+# Remove o menu superior direito nativo do streamlit
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
+
 # Gera ou recupera ID de sessão
 if "id" not in st.session_state:
     st.session_state.id = str(uuid.uuid4())
