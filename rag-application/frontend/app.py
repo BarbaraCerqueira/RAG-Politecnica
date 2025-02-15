@@ -2,6 +2,7 @@ import os
 import time
 import uuid
 import streamlit as st
+from streamlit_float import *
 from streamlit_option_menu import option_menu
 from datetime import date
 from pathlib import Path
@@ -28,6 +29,8 @@ st.set_page_config(
     page_icon="images/poligpt_icon.png",
     layout="centered"
 )
+
+float_init(theme=True, include_unstable_primary=False)
 
 # Remove o menu superior direito nativo do streamlit
 hide_streamlit_style = """
@@ -254,18 +257,18 @@ def home_page():
     # user_input = right.chat_input(placeholder="Escreva uma mensagem...", max_chars=8192)
 
     # 1) Injeta o estilo de barra fixa
-    st.markdown("""
-    <style>
-    div[data-testid="stHorizontalBlock"]:has(div[data-testid="stChatInput"]) {
-        position: fixed;
-        bottom: 1rem;
-        background: white;
-    }
-    [data-testid="stAppViewContainer"] {
-        margin-bottom: 4em; /* ajuste conforme a altura da barra */
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # st.markdown("""
+    # <style>
+    # div[data-testid="stHorizontalBlock"]:has(div[data-testid="stChatInput"]) {
+    #     position: fixed;
+    #     bottom: 1rem;
+    #     background: white;
+    # }
+    # [data-testid="stAppViewContainer"] {
+    #     margin-bottom: 4em; /* ajuste conforme a altura da barra */
+    # }
+    # </style>
+    # """, unsafe_allow_html=True)
 
     chat_col1, chat_col2 = st.columns([0.05, 0.95], gap="medium", vertical_alignment="bottom")
 
@@ -274,11 +277,14 @@ def home_page():
             st.session_state.chat_history = []
             st.rerun()
 
+        button_css = float_css_helper(width="2rem", bottom="2rem", transition=0)
+        float_parent(css=button_css)
+
     with chat_col2:
         user_input = st.chat_input("Escreva algo...")
 
-        if user_input:
-            st.write(f"Você: {user_input}")
+        chat_css = float_css_helper(width="2rem", bottom="2rem", transition=0)
+        float_parent(css=chat_css)
 
     latest_input = user_input or user_button_message
     if latest_input:
