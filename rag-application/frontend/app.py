@@ -235,6 +235,8 @@ def home_page():
     elif opt_col3.button("Qual é o procedimento para registrar estágio?"):
         user_button_message = "Qual é o procedimento para registrar um estágio?"
 
+    st.write("\n")
+
     # Inicializa histórico de chat
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
@@ -246,45 +248,24 @@ def home_page():
         else:
             show_message(role="assistant", content=msg["content"])
 
-    # left, right = st.columns(spec=[0.05, 0.95], gap="medium", vertical_alignment="bottom")
-    
-    # # Exibir opção de deletar todo o histórico
-    # if left.button(":material/Delete:"):
-    #     st.session_state.chat_history = []
-    #     st.rerun()
+    st.write("\n")
 
-    # # Campo de input do usuário
-    # user_input = right.chat_input(placeholder="Escreva uma mensagem...", max_chars=8192)
-
-    # 1) Injeta o estilo de barra fixa
-    # st.markdown("""
-    # <style>
-    # div[data-testid="stHorizontalBlock"]:has(div[data-testid="stChatInput"]) {
-    #     position: fixed;
-    #     bottom: 1rem;
-    #     background: white;
-    # }
-    # [data-testid="stAppViewContainer"] {
-    #     margin-bottom: 4em; /* ajuste conforme a altura da barra */
-    # }
-    # </style>
-    # """, unsafe_allow_html=True)
-
-    chat_col1, chat_col2 = st.columns([0.05, 0.95], gap="medium", vertical_alignment="bottom")
-
-    with chat_col1:
-        if st.button(":material/Delete:"):
+    # Exibe botão para limpar o histórico da conversa
+    col1, _ = st.columns(2, gap="medium", vertical_alignment="bottom")
+    with col1:
+        if st.button(":material/Delete: Limpar"):
             st.session_state.chat_history = []
             st.rerun()
 
-        button_css = float_css_helper(width="2rem", bottom="2rem", transition=0)
+        button_css = float_css_helper(
+            position="fixed",
+            bottom="6.8rem",
+            z_index="9999"
+        )
         float_parent(css=button_css)
 
-    with chat_col2:
-        user_input = st.chat_input("Escreva algo...")
-
-        chat_css = float_css_helper(width="2rem", bottom="2rem", transition=0)
-        float_parent(css=chat_css)
+    # Recebe input do usuário e gera resposta
+    user_input = st.chat_input("Envie uma mensagem...")
 
     latest_input = user_input or user_button_message
     if latest_input:
@@ -302,13 +283,13 @@ def evauation_page():
 # ======================== FUNÇÃO PRINCIPAL DA APLICAÇÃO ========================
 
 def main():
-    # 1. SIDEBAR
+    # SIDEBAR
     with st.sidebar:
-        # Exibe logo se existir
+        # Exibe logotipo se existir
         if Path(LOGO_PATH).is_file():
             st.image(LOGO_PATH, use_container_width=True)
         else:
-            st.markdown("**PoliGPT**")
+            st.header("PoliGPT")
 
         st.write("\n")
 
@@ -331,15 +312,15 @@ def main():
 
         st.link_button("Escola Politécnica", "https://www.poli.ufrj.br/", type="secondary", icon="🔗")
 
-    # 2. CORPO PRINCIPAL
+    # CORPO PRINCIPAL
     if page == "Chat":
         home_page()
     
-    # 3. PAGINA DE CONFIGURAÇOES
+    # PAGINA DE CONFIGURAÇOES
     elif page == "Settings":
         settings_page()
 
-    # 3. PAGINA DE CONFIGURAÇOES
+    # PAGINA DE TESTES DE AVALIAÇÃO
     elif page == "Evaluation":
         evauation_page()
 
