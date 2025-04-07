@@ -19,8 +19,8 @@ sys.path.append(etl_folder_path)
 from delta.tables import DeltaTable
 from pyspark.sql import Row
 from pyspark.sql.types import StringType, DoubleType
-from pyspark.sql.functions import col, lit, when, length, udf, to_timestamp, regexp_replace, trim
-from utils import list_all_files, upsert_to_delta_lake
+from pyspark.sql.functions import col, lit, when, length, udf, to_timestamp, regexp_replace, trim, unix_timestamp, current_timestamp
+from utils import list_all_files, upsert_to_delta_lake, save_checkpoint, get_checkpoint_by_source
 
 # COMMAND ----------
 
@@ -31,13 +31,16 @@ from utils import list_all_files, upsert_to_delta_lake
 
 input_base_path = "/mnt/adlsraw/pdf/"
 output_path = "/mnt/adlstrusted/poli_consolidated_pdf/"
+checkpoint_path = "/mnt/adlstrusted/checkpoints/poli_consolidated_pdf/"
 num_processes = 4
 
 # COMMAND ----------
 
 # Widgets para receber os inputs do Workflow
-# base_path_pdf = dbutils.widgets.get("base_path_pdf")
+# input_base_path = dbutils.widgets.get("input_base_path")
 # output_path = dbutils.widgets.get("output_path")
+# checkpoint_path = dbutils.widgets.get("checkpoint_path")
+# num_processes = dbutils.widgets.get("num_processes")
 
 # COMMAND ----------
 
@@ -149,8 +152,8 @@ def valid_char_ratio(text):
 
 # COMMAND ----------
 
-# Multithreading para paralelizar o processo de leitura dos PDFs e HTMLs
-pool = ThreadPool(processes=num_processes)
+# Encontrar timestamp da última extração para evitar reprocessamento
+last_extraction = get_checkpoint_by_source(checkpoint_path=checkpoint_path, source_path=input_base_path)
 
 # COMMAND ----------
 
@@ -159,18 +162,27 @@ pool = ThreadPool(processes=num_processes)
 
 # COMMAND ----------
 
-# Listar todos os PDFs na estrutura de subdiretórios
-pdf_files = list_all_files(base_dir=input_base_path, file_format="pdf")
+# Listar todos os PDFs na estrutura de subdiretórios desde a última extração
+pdf_files = list_all_files(base_dir=input_base_path, file_format="pdf", min_modified_timestamp=last_extraction)
 
-# Processar os PDFs em paralelo
-pdf_text_data = pool.map(process_pdf, pdf_files)
+# COMMAND ----------
 
-# Criar o DataFrame a partir da lista de Rows
-df_pdf = spark.createDataFrame(pdf_text_data)
+if pdf_files:
+    # Multithreading para paralelizar o processo de leitura de PDFs ou HTMLs
+    pool = ThreadPool(processes=num_processes)
 
-# Fechar o pool de processos
-pool.close()
-pool.join()
+    # Processar os PDFs em paralelo
+    pdf_text_data = pool.map(process_pdf, pdf_files)
+
+    # Criar o DataFrame a partir da lista de Rows
+    df_pdf = spark.createDataFrame(pdf_text_data)
+
+    # Fechar o pool de processos
+    pool.close()
+    pool.join()
+
+else:
+    dbutils.notebook.exit("Não foram encontrados arquivos PDF novos ou atualizados para processar. O processamento será interrompido.")
 
 # COMMAND ----------
 
@@ -218,7 +230,9 @@ df_poli_consolidated_pdf = (
         col("creator").cast("string"),
         col("creation_date").cast("timestamp"),
         col("modification_date").cast("timestamp"),
-        col("content").cast("string")
+        col("content").cast("string"),
+        # Adicionando data de atualização do registro em milissegundos para usar nas leituras incrementais
+        (unix_timestamp(current_timestamp()) * 1000).cast("long").alias("_update_timestamp")
     )
 )
 
@@ -230,3 +244,4 @@ df_poli_consolidated_pdf = (
 # COMMAND ----------
 
 upsert_to_delta_lake(df=df_poli_consolidated_pdf, delta_table_path=output_path, key_column="file_path")
+save_checkpoint(checkpoint_path=checkpoint_path, source_path=input_base_path, target_path=output_path)

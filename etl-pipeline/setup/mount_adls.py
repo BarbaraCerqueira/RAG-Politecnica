@@ -25,8 +25,3 @@ dbutils.fs.mount(
   source = "abfss://refined@dlspoligptdev.dfs.core.windows.net/",
   mount_point = "/mnt/adlsrefined",
   extra_configs = configs)
-
-dbutils.fs.mount(
-  source = "abfss://scripts@dlspoligptdev.dfs.core.windows.net/",
-  mount_point = "/mnt/adlsscripts",
-  extra_configs = configs)
