@@ -14,8 +14,8 @@ sys.path.append(etl_folder_path)
 
 from delta.tables import DeltaTable
 from pyspark.sql import Row
-from pyspark.sql.functions import col, lit, when, length, trim, regexp_replace
-from utils import list_all_files, upsert_to_delta_lake
+from pyspark.sql.functions import col, lit, when, length, trim, regexp_replace, unix_timestamp, current_timestamp
+from utils import list_all_files, upsert_to_delta_lake, save_checkpoint, get_checkpoint_by_source
 
 # COMMAND ----------
 
@@ -26,6 +26,7 @@ from utils import list_all_files, upsert_to_delta_lake
 
 input_base_path = "/mnt/adlsraw/html/"
 output_path = "/mnt/adlstrusted/poli_consolidated_html/"
+checkpoint_path = "/mnt/adlstrusted/checkpoints/poli_consolidated_html/"
 num_processes = 4
 
 # COMMAND ----------
@@ -33,6 +34,8 @@ num_processes = 4
 # Widgets para receber os inputs do Workflow
 # input_base_path = dbutils.widgets.get("input_base_path")
 # output_path = dbutils.widgets.get("output_path")
+# checkpoint_path = dbutils.widgets.get("checkpoint_path")
+# num_processes = dbutils.widgets.get("num_processes")
 
 # COMMAND ----------
 
@@ -121,8 +124,8 @@ def process_html(html_path):
 
 # COMMAND ----------
 
-# Multithreading para paralelizar o processo de leitura dos PDFs e HTMLs
-pool = ThreadPool(processes=num_processes)
+# Encontrar timestamp da última extração para evitar reprocessamento
+last_extraction = get_checkpoint_by_source(checkpoint_path=checkpoint_path, source_path=input_base_path)
 
 # COMMAND ----------
 
@@ -131,18 +134,27 @@ pool = ThreadPool(processes=num_processes)
 
 # COMMAND ----------
 
-# Listar todos os HTMLs na estrutura de subdiretórios
-html_files = list_all_files(base_dir=input_base_path, file_format="html")
+# Listar todos os HTMLs na estrutura de subdiretórios desde a última extração
+html_files = list_all_files(base_dir=input_base_path, file_format="html", min_modified_timestamp=last_extraction)
 
-# Processar os HTMLs em paralelo
-html_text_data = pool.map(process_html, html_files)
+# COMMAND ----------
 
-# Criar o DataFrame a partir da lista de Rows
-df_html = spark.createDataFrame(html_text_data)
+if html_files:
+    # Multithreading para paralelizar o processo de leitura de PDFs ou HTMLs
+    pool = ThreadPool(processes=num_processes)
 
-# Fechar o pool de processos
-pool.close()
-pool.join()
+    # Processar os HTMLs em paralelo
+    html_text_data = pool.map(process_html, html_files)
+
+    # Criar o DataFrame a partir da lista de Rows
+    df_html = spark.createDataFrame(html_text_data)
+
+    # Fechar o pool de processos
+    pool.close()
+    pool.join()
+
+else:
+    dbutils.notebook.exit("Não foram encontrados arquivos HTML novos ou atualizados para processar. O processamento deste notebook será interrompido.")
 
 # COMMAND ----------
 
@@ -166,7 +178,9 @@ df_poli_consolidated_html = (
         col("title").cast("string"),
         col("last_modified").cast("timestamp"),
         col("description").cast("string"),
-        col("content").cast("string")
+        col("content").cast("string"),
+        # Adicionando data de atualização do registro em milissegundos para usar nas leituras incrementais
+        (unix_timestamp(current_timestamp()) * 1000).cast("long").alias("_update_timestamp")
     )
 )
 
@@ -178,3 +192,4 @@ df_poli_consolidated_html = (
 # COMMAND ----------
 
 upsert_to_delta_lake(df=df_poli_consolidated_html, delta_table_path=output_path, key_column="file_path")
+save_checkpoint(checkpoint_path=checkpoint_path, source_path=input_base_path, target_path=output_path)
