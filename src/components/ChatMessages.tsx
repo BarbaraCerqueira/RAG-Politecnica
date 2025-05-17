@@ -16,9 +16,9 @@ const ChatMessages: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-3xl mx-auto">
-        <div className="space-y-4 py-4 px-4">
+    <div className="w-full h-full">
+      <div className="max-w-3xl mx-auto h-full px-4">
+        <div className="space-y-6 py-8">
           {messages.map((message, index) => (
             <ChatMessage key={index} message={message} />
           ))}
@@ -31,7 +31,7 @@ const ChatMessages: React.FC = () => {
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} className="h-4" />
         </div>
       </div>
     </div>
