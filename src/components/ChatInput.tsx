@@ -42,7 +42,7 @@ const ChatInput: React.FC = () => {
   };
 
   return (
-    <div className="flex items-start gap-2 mt-4 mb-4 px-4">
+    <div className="flex items-start gap-2 mb-4 px-4">
       {messages.length > 0 && (
         <button
           onClick={clearMessages}
