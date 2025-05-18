@@ -19,7 +19,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         className={`flex max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end`}
       >
         <div className="flex flex-col items-center mx-3">
-          <div className="h-10 w-10 rounded-lg overflow-hidden bg-white dark:bg-gray-200 p-0.5">
+          <div className="h-10 w-10 rounded-lg overflow-hidden bg-white/80 dark:bg-gray-200 p-0.5 shadow-sm">
             <img src={avatar} alt={message.role} className="h-full w-full object-cover" />
           </div>
           <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{name}</span>
@@ -28,7 +28,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           className={`rounded-2xl px-5 py-3 ${
             message.role === 'user' 
               ? 'bg-blue-600 dark:bg-blue-700 text-white rounded-tr-none shadow-md' 
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-tl-none shadow-md'
+              : 'bg-white/80 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-tl-none shadow-md'
           }`}
         >
           <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>

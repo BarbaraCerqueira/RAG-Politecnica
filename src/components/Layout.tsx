@@ -34,9 +34,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [darkMode]);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div className="flex h-screen bg-gray-200/70 dark:bg-gray-900 transition-colors duration-200">
       {/* Mobile sidebar toggle and theme toggle */}
-      <div className="fixed z-50 top-4 right-4 flex gap-2">
+      <div className="fixed z-50 top-4 right-6 flex gap-2">
         <button
           className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-lg transition-colors duration-200"
           onClick={toggleTheme}
@@ -55,7 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div
         className={`fixed md:static inset-y-0 left-0 transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 transition duration-200 ease-in-out z-30 w-64 bg-gray-100 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full overflow-y-auto`}
+        } md:translate-x-0 transition duration-200 ease-in-out z-30 w-64 bg-gray-100/80 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 h-full overflow-y-auto`}
       >
         <Sidebar onCloseMobile={() => setSidebarOpen(false)} />
       </div>

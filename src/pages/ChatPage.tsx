@@ -23,7 +23,7 @@ const ChatPage: React.FC = () => {
   ];
 
   return (
-    <div className="grid grid-rows-[1fr_auto] h-full max-h-screen overflow-hidden">
+    <div className="grid grid-rows-[1fr_auto] h-full max-h-screen overflow-hidden bg-gray-200/70 dark:bg-gray-900">
       
       {/* Área de mensagens com a scrollbar propria */}
       <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 
@@ -33,7 +33,7 @@ const ChatPage: React.FC = () => {
           {messages.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
               <img src={poliLogo} alt="PoliGPT" className="w-48 mb-8" />
-              <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-3">
+              <h1 className="text-4xl font-bold text-gray-700 dark:text-gray-200/70 mb-3">
                 Como posso ajudar você hoje?
               </h1>
               <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
@@ -45,7 +45,7 @@ const ChatPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col space-y-4 pt-8 pb-8">
+            <div className="flex flex-col space-y-4 pt-16 pb-12">
               <ChatMessages />
             </div>
           )}
@@ -53,7 +53,7 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Chat Input fixo na base da pagina*/}
-      <div className="bg-white dark:bg-gray-900">
+      <div>
         <div className="max-w-5xl mx-auto mb-8 px-8">
           <ChatInput />
         </div>
