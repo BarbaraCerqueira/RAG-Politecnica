@@ -23,11 +23,11 @@ const ChatPage: React.FC = () => {
   ];
 
   return (
-    <div className="h-[calc(100%-144px)] relative overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 
+    <div className="h-[calc(100%-80px)] relative overflow-y-auto scrollbar scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 
       scrollbar-track-transparent hover:scrollbar-thumb-gray-400 
       dark:hover:scrollbar-thumb-gray-600
       scrollbar-thumb-rounded-full">
-      <div className="flex flex-col min-h-full max-w-5xl mx-auto px-4">
+      <div className="flex flex-col min-h-full max-w-5xl mx-auto">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <div className="flex flex-col items-center mb-8 text-center">
