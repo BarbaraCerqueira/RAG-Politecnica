@@ -23,43 +23,40 @@ const ChatPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] relative">
-      <div className="flex-1 flex flex-col min-h-0">
+    <div className="h-[calc(100vh-2rem)] relative overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 
+      scrollbar-track-transparent hover:scrollbar-thumb-gray-400 
+      dark:hover:scrollbar-thumb-gray-600
+      scrollbar-thumb-rounded-full">
+      <div className="flex flex-col min-h-full max-w-5xl mx-auto px-4 pb-32">
         {messages.length === 0 ? (
-          <>
-            <div className="flex-1 flex flex-col items-center justify-center px-6 pb-32">
-              <div className="flex flex-col items-center mb-8 text-center">
-                <img src={poliLogo} alt="PoliGPT" className="w-48 mb-8" />
-                <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-3">
-                  Como posso ajudar você hoje?
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 max-w-2xl text-center">
-                  Sou o assistente virtual da Escola Politécnica da UFRJ, 
-                  pronto para ajudar com questões acadêmicas e administrativas.
-                </p>
-              </div>
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center mb-8 text-center">
+              <img src={poliLogo} alt="PoliGPT" className="w-48 mb-8" />
+              <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-3">
+                Como posso ajudar você hoje?
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl text-center">
+                Sou o assistente virtual da Escola Politécnica da UFRJ, 
+                pronto para ajudar com questões acadêmicas e administrativas.
+              </p>
+            </div>
 
-              <div className="w-full max-w-4xl">
-                <SuggestionButtons suggestions={suggestionButtons} />
-              </div>
+            <div className="w-full">
+              <SuggestionButtons suggestions={suggestionButtons} />
             </div>
-            <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900">
-              <ChatInput />
-            </div>
-          </>
+          </div>
         ) : (
-          <>
-            <div className="flex-1 overflow-y-auto pt-6 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 
-              scrollbar-track-transparent hover:scrollbar-thumb-gray-400 
-              dark:hover:scrollbar-thumb-gray-600
-              scrollbar-thumb-rounded-full">
-              <ChatMessages />
-            </div>
-            <div className="flex-shrink-0 bg-white dark:bg-gray-900">
-              <ChatInput />
-            </div>
-          </>
+          <div className="flex-1">
+            <ChatMessages />
+          </div>
         )}
+      </div>
+      
+      <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent h-32 pointer-events-none" />
+      <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white dark:bg-gray-900">
+        <div className="max-w-5xl mx-auto px-4">
+          <ChatInput />
+        </div>
       </div>
     </div>
   );
