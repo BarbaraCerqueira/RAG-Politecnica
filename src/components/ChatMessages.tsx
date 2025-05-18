@@ -18,12 +18,12 @@ const ChatMessages: React.FC = () => {
   return (
     <div className="w-full h-full">
       <div className="max-w-3xl mx-auto h-full px-4">
-        <div className="space-y-6 py-8">
+        <div className="space-y-6">
           {messages.map((message, index) => (
             <ChatMessage key={index} message={message} />
           ))}
           {isLoading && (
-            <div className="flex items-center justify-center py-4">
+            <div className="flex items-center justify-center py-2">
               <div className="animate-pulse flex space-x-2">
                 <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
                 <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
@@ -31,7 +31,7 @@ const ChatMessages: React.FC = () => {
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} className="h-4" />
+          <div ref={messagesEndRef} />
         </div>
       </div>
     </div>

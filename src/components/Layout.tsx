@@ -55,7 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div
         className={`fixed md:static inset-y-0 left-0 transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 transition duration-200 ease-in-out z-30 w-64 bg-gray-100 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto`}
+        } md:translate-x-0 transition duration-200 ease-in-out z-30 w-64 bg-gray-100 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full overflow-y-auto`}
       >
         <Sidebar onCloseMobile={() => setSidebarOpen(false)} />
       </div>
@@ -69,8 +69,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
       
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
-        <main className="h-full">{children}</main>
+      <div className="flex-1 h-screen overflow-hidden">
+        <main className="h-full overflow-y-auto">{children}</main>
       </div>
     </div>
   );
