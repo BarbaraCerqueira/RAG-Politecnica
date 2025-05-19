@@ -16,7 +16,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn mb-6`}
     >
       <div 
-        className={`flex max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end`}
+        className={`flex max-w-full ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end`}
       >
         <div className="flex flex-col items-center mx-3">
           <div className="h-10 w-10 rounded-lg overflow-hidden bg-white/80 dark:bg-gray-200 p-0.5 shadow-sm">

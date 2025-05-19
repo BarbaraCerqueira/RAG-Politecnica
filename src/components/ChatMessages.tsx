@@ -18,7 +18,7 @@ const ChatMessages: React.FC = () => {
 
   return (
     <div className="w-full h-full">
-      <div className="max-w-3xl mx-auto h-full px-4">
+      <div className="max-w-5xl mx-auto h-full px-8">
         <div className="space-y-6">
           {messages.map((message, index) => (
             <ChatMessage key={index} message={message} />
