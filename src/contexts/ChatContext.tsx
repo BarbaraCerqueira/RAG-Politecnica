@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define types for our context
@@ -7,11 +7,19 @@ export interface Message {
   content: string;
 }
 
-interface ChatContextType {
+interface Chat {
+  id: string;
+  title: string;
   messages: Message[];
-  sessionId: string;
+}
+
+interface ChatContextType {
+  chats: Chat[];
+  currentChatId: string | null;
+  messages: Message[]; // Current chat messages for backward compatibility
   isLoading: boolean;
-  addMessage: (message: Message) => void;
+  switchChat: (id: string) => void;
+  newChat: () => void;
   sendMessage: (content: string) => Promise<void>;
   clearMessages: () => void;
 }
@@ -36,84 +44,117 @@ interface ChatProviderProps {
 const API_ENDPOINT = 'https://api-endpoint.example.com/chat';
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [sessionId, setSessionId] = useState<string>('');
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Initialize session ID
-  useEffect(() => {
-    const storedSessionId = localStorage.getItem('sessionId');
-    if (storedSessionId) {
-      setSessionId(storedSessionId);
-    } else {
-      const newSessionId = uuidv4();
-      setSessionId(newSessionId);
-      localStorage.setItem('sessionId', newSessionId);
+  // Initialize with a new chat
+  React.useEffect(() => {
+    if (chats.length === 0) {
+      const newChatId = uuidv4();
+      setChats([{
+        id: newChatId,
+        title: 'Chat 1',
+        messages: []
+      }]);
+      setCurrentChatId(newChatId);
     }
   }, []);
 
-  const addMessage = (message: Message) => {
-    setMessages((prevMessages) => [...prevMessages, message]);
+  // Get current chat messages
+  const messages = currentChatId 
+    ? chats.find(chat => chat.id === currentChatId)?.messages || []
+    : [];
+
+  const getCurrentChatIndex = () => {
+    return chats.findIndex(chat => chat.id === currentChatId);
+  };
+
+  const switchChat = (id: string) => {
+    setCurrentChatId(id);
+  };
+
+  const newChat = () => {
+    const newChatId = uuidv4();
+    setChats(prevChats => [
+      ...prevChats,
+      {
+        id: newChatId,
+        title: `Chat ${prevChats.length + 1}`,
+        messages: []
+      }
+    ]);
+    setCurrentChatId(newChatId);
+  };
+
+  const appendMessage = (message: Message) => {
+    const chatIndex = getCurrentChatIndex();
+    if (chatIndex === -1) return;
+
+    setChats(prevChats => {
+      const newChats = [...prevChats];
+      newChats[chatIndex] = {
+        ...newChats[chatIndex],
+        messages: [...newChats[chatIndex].messages, message]
+      };
+      return newChats;
+    });
   };
 
   const clearMessages = () => {
-    setMessages([]);
+    const chatIndex = getCurrentChatIndex();
+    if (chatIndex === -1) return;
+
+    setChats(prevChats => {
+      const newChats = [...prevChats];
+      newChats[chatIndex] = {
+        ...newChats[chatIndex],
+        messages: []
+      };
+      return newChats;
+    });
   };
 
   const sendMessage = async (content: string) => {
+    if (!currentChatId || isLoading) return;
+
+    setIsLoading(true);
+    
+    // Add user message
+    const userMessage: Message = { role: 'user', content };
+    appendMessage(userMessage);
+
     try {
-      // Add user message to state
-      addMessage({ role: 'user', content });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Set loading state
-      setIsLoading(true);
-      
-      // Prepare the chat history in the format expected by the API
-      const chatHistory = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-      
-      // Make API request
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: content,
-          chat_history: chatHistory,
-          session_id: sessionId
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to get response from server');
-      }
-      
-      const data = await response.json();
-      
-      // Add assistant response to state
-      addMessage({ role: 'assistant', content: data.response });
+      // Simulate assistant response
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.'
+      };
+      appendMessage(assistantMessage);
     } catch (error) {
       console.error('Error sending message:', error);
-      addMessage({ 
-        role: 'assistant', 
-        content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.' 
-      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const value = {
+    chats,
+    currentChatId,
     messages,
-    sessionId,
     isLoading,
-    addMessage,
+    switchChat,
+    newChat,
     sendMessage,
     clearMessages
   };
 
-  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
+  return (
+    <ChatContext.Provider value={value}>
+      {children}
+    </ChatContext.Provider>
+  );
 };

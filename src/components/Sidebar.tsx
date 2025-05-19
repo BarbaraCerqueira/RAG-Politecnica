@@ -1,13 +1,20 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { MessageSquare, Settings, BarChart2, Info, Link2 } from 'lucide-react';
+import { MessageSquare, Info, Link2, Plus } from 'lucide-react';
 import poliLogo from '../assets/poligpt_logo.png';
+import { useChat } from '../contexts/ChatContext';
 
 interface SidebarProps {
   onCloseMobile: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
+  const { chats, currentChatId, newChat, switchChat } = useChat();
+
+  const handleChatSwitch = (chatId: string) => {
+    switchChat(chatId);
+    onCloseMobile();
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
@@ -15,52 +22,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         <img src={poliLogo} alt="PoliGPT" className="mx-auto w-40" />
       </div>
       
-      {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-1">
-        <NavLink
-          to="/"
-          className={({ isActive }) => 
-            `flex items-center px-4 py-3 rounded-lg transition-colors ${
-              isActive 
-                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
-                : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`
-          }
-          onClick={onCloseMobile}
+      {/* New Chat Button */}
+      <div className="px-2 py-4">
+        <button
+          onClick={() => {
+            newChat();
+            onCloseMobile();
+          }}
+          className="w-full flex items-center px-4 py-3 rounded-lg transition-colors bg-blue-600 hover:bg-blue-700 text-white"
         >
-          <MessageSquare className="mr-3 h-5 w-5" />
-          <span className="font-medium">Chat</span>
-        </NavLink>
-        
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => 
-            `flex items-center px-4 py-3 rounded-lg transition-colors ${
-              isActive 
-                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
+          <Plus className="mr-3 h-5 w-5" />
+          <span className="font-medium">Novo Chat</span>
+        </button>
+      </div>
+
+      {/* Chat List */}
+      <nav className="flex-1 px-2 overflow-y-auto">
+        {chats.map(chat => (
+          <button
+            key={chat.id}
+            onClick={() => handleChatSwitch(chat.id)}
+            className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors mb-1 ${
+              chat.id === currentChatId
+                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
                 : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`
-          }
-          onClick={onCloseMobile}
-        >
-          <Settings className="mr-3 h-5 w-5" />
-          <span className="font-medium">Settings</span>
-        </NavLink>
-        
-        <NavLink
-          to="/evaluation"
-          className={({ isActive }) => 
-            `flex items-center px-4 py-3 rounded-lg transition-colors ${
-              isActive 
-                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
-                : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`
-          }
-          onClick={onCloseMobile}
-        >
-          <BarChart2 className="mr-3 h-5 w-5" />
-          <span className="font-medium">Evaluation</span>
-        </NavLink>
+            }`}
+          >
+            <MessageSquare className="mr-3 h-5 w-5" />
+            <span className="font-medium">{chat.title}</span>
+          </button>
+        ))}
       </nav>
       
       {/* Information */}
