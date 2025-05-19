@@ -22,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           className={({ isActive }) => 
             `flex items-center px-4 py-3 rounded-lg transition-colors ${
               isActive 
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' 
+                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
                 : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`
           }
@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           className={({ isActive }) => 
             `flex items-center px-4 py-3 rounded-lg transition-colors ${
               isActive 
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' 
+                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
                 : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`
           }
@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           className={({ isActive }) => 
             `flex items-center px-4 py-3 rounded-lg transition-colors ${
               isActive 
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' 
+                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
                 : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`
           }
