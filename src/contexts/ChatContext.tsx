@@ -72,7 +72,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       messages: []
     };
     
-    setChats(prevChats => [...prevChats, newChat]);
+    setChats(prevChats => [newChat, ...prevChats]);
     setCurrentChatId(newChatId);
   };
 
