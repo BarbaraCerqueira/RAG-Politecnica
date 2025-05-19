@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define types for our context
@@ -39,6 +39,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const initialized = useRef(false);
 
   // Get the current active chat
   const currentChat = chats.find(chat => chat.id === currentChatId);
@@ -48,7 +49,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   
   // Initialize with a first chat
   useEffect(() => {
-    if (chats.length === 0) {
+    if (!initialized.current && chats.length === 0) {
       const newChatId = uuidv4();
       setChats([
         {
@@ -58,8 +59,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         }
       ]);
       setCurrentChatId(newChatId);
+      initialized.current = true;
     }
-  }, []);
+  }, [chats.length]);
 
   const newChat = () => {
     const chatCount = chats.length + 1;
