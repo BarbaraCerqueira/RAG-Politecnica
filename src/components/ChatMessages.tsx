@@ -1,11 +1,11 @@
-import React, { useRef, useEffect } from 'react';
-import { useChat } from '../contexts/ChatContext';
+import React, { useRef, useEffect, useMemo } from 'react';
+import { useChat } from '../hooks/useChat';
 import ChatMessage from './ChatMessage';
 
 const ChatMessages: React.FC = () => {
   const { currentChat, isLoading } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messages = currentChat?.messages || [];
+  const messages = useMemo(() => currentChat?.messages || [], [currentChat?.messages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

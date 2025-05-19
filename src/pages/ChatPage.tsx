@@ -3,7 +3,7 @@ import ChatInput from '../components/ChatInput';
 import ChatMessages from '../components/ChatMessages';
 import SuggestionButtons from '../components/SuggestionButtons';
 import poliLogo from '../assets/poligpt_logo.png';
-import { useChat } from '../contexts/ChatContext';
+import { useChat } from '../hooks/useChat';
 
 const ChatPage: React.FC = () => {
   const { currentChat } = useChat();

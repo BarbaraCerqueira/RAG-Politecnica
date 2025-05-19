@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { MessageSquare, Info, Link2, PlusSquare } from 'lucide-react';
 import poliLogo from '../assets/poligpt_logo.png';
-import { useChat } from '../contexts/ChatContext';
+import { useChat } from '../hooks/useChat';
 
 interface SidebarProps {
   onCloseMobile: () => void;

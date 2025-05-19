@@ -1,5 +1,5 @@
 import React from 'react';
-import { useChat } from '../contexts/ChatContext';
+import { useChat } from '../hooks/useChat';
 import { BookOpen, FileText, Briefcase } from 'lucide-react';
 
 interface SuggestionButtonsProps {
