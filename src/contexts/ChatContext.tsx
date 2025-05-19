@@ -40,6 +40,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const initialized = useRef(false);
+  const pendingChatId = useRef<string | null>(null);
 
   // Get the current active chat
   const currentChat = chats.find(chat => chat.id === currentChatId);
@@ -51,63 +52,74 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   useEffect(() => {
     if (!initialized.current && chats.length === 0) {
       const newChatId = uuidv4();
-      setChats([
-        {
-          id: newChatId,
-          title: 'Nova Conversa',
-          messages: []
-        }
-      ]);
+      pendingChatId.current = newChatId;
       setCurrentChatId(newChatId);
       initialized.current = true;
     }
   }, [chats.length]);
 
   const newChat = () => {
-    const chatCount = chats.length + 1;
     const newChatId = uuidv4();
-    const newChat: Chat = {
-      id: newChatId,
-      title: `Chat ${chatCount}`,
-      messages: []
-    };
-    
-    setChats(prevChats => [newChat, ...prevChats]);
+    pendingChatId.current = newChatId;
     setCurrentChatId(newChatId);
   };
 
   const switchChat = (id: string) => {
     const chatExists = chats.some(chat => chat.id === id);
     if (chatExists) {
+      pendingChatId.current = null;
       setCurrentChatId(id);
     }
   };
 
   const appendMessage = (message: Message) => {
-    setChats(prevChats => 
-      prevChats.map(chat => 
-        chat.id === currentChatId 
-          ? { 
-              ...chat, 
-              messages: [...chat.messages, message],
-              // Update title for first user message
-              title: chat.messages.length === 0 && message.role === 'user' 
-                ? message.content.slice(0, 20) + (message.content.length > 20 ? '...' : '') 
-                : chat.title
-            } 
-          : chat
-      )
-    );
+    // Se é um chat pendente, cria um novo chat
+    if (pendingChatId.current === currentChatId) {
+      const newChat: Chat = {
+        id: currentChatId,
+        title: message.role === 'user' 
+          ? message.content.slice(0, 20) + (message.content.length > 20 ? '...' : '')
+          : 'Nova Conversa',
+        messages: [message]
+      };
+      setChats(prevChats => [newChat, ...prevChats]);
+      pendingChatId.current = null;
+    } else {
+      // Atualiza um chat existente
+      setChats(prevChats => 
+        prevChats.map(chat => 
+          chat.id === currentChatId 
+            ? { 
+                ...chat, 
+                messages: [...chat.messages, message],
+                title: chat.messages.length === 0 && message.role === 'user' 
+                  ? message.content.slice(0, 20) + (message.content.length > 20 ? '...' : '') 
+                  : chat.title
+              } 
+            : chat
+        )
+      );
+    }
   };
 
   const clearCurrentChat = () => {
-    setChats(prevChats => 
-      prevChats.map(chat => 
-        chat.id === currentChatId 
-          ? { ...chat, messages: [] } 
-          : chat
-      )
-    );
+    if (pendingChatId.current === currentChatId) {
+      // Se for um chat pendente, apenas volta para o último chat existente
+      const lastChat = chats[0];
+      if (lastChat) {
+        setCurrentChatId(lastChat.id);
+      }
+      pendingChatId.current = null;
+    } else {
+      // Limpa o chat existente
+      setChats(prevChats => 
+        prevChats.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: [] } 
+            : chat
+        )
+      );
+    }
   };
 
   const sendMessage = async (content: string) => {
@@ -133,7 +145,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         body: JSON.stringify({
           query: content,
           chat_history: chatHistory,
-          session_id: currentChatId // Use currentChatId as session_id for API
+          session_id: currentChatId
         }),
       });
       
