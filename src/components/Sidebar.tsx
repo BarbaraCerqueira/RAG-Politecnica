@@ -1,5 +1,4 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
 import { MessageSquare, Info, Link2, PlusSquare } from 'lucide-react';
 import poliLogo from '../assets/poligpt_logo.png';
 import { useChat } from '../hooks/useChat';
@@ -30,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       </div>
       
       {/* Chat List */}
-      <div className="px-2 pb-2">
+      <div className="px-2 pb-2 flex-1">
         <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Conversas
         </h3>
@@ -51,24 +50,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           ))}
         </div>
       </div>
-      
-      {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 mt-2 border-t border-gray-200 dark:border-gray-700">
-        <NavLink
-          to="/"
-          className={({ isActive }) => 
-            `flex items-center px-4 py-3 rounded-lg transition-colors ${
-              isActive 
-                ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
-                : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`
-          }
-          onClick={onCloseMobile}
-        >
-          <MessageSquare className="mr-3 h-5 w-5" />
-          <span className="font-medium">Chat</span>
-        </NavLink>
-      </nav>
       
       {/* Information */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
