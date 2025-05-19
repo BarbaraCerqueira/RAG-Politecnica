@@ -3,8 +3,9 @@ import { useChat } from '../contexts/ChatContext';
 import ChatMessage from './ChatMessage';
 
 const ChatMessages: React.FC = () => {
-  const { messages, isLoading } = useChat();
+  const { currentChat, isLoading } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messages = currentChat?.messages || [];
 
   // Scroll to bottom when messages change
   useEffect(() => {

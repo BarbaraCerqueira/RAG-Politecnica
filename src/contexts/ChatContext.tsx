@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define types for our context
@@ -7,21 +7,22 @@ export interface Message {
   content: string;
 }
 
-interface Chat {
-  id: string;
+export interface Chat {
+  id: string; // uuid
   title: string;
   messages: Message[];
 }
 
 interface ChatContextType {
   chats: Chat[];
-  currentChatId: string | null;
-  messages: Message[]; // Current chat messages for backward compatibility
+  currentChatId: string;
   isLoading: boolean;
   switchChat: (id: string) => void;
   newChat: () => void;
+  appendMessage: (message: Message) => void;
   sendMessage: (content: string) => Promise<void>;
-  clearMessages: () => void;
+  clearCurrentChat: () => void;
+  currentChat: Chat | undefined;
 }
 
 // Create the context with a default value
@@ -45,97 +46,118 @@ const API_ENDPOINT = 'https://api-endpoint.example.com/chat';
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [chats, setChats] = useState<Chat[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Initialize with a new chat
-  React.useEffect(() => {
+  // Get the current active chat
+  const currentChat = chats.find(chat => chat.id === currentChatId);
+
+  // For compatibility with existing components
+  const messages = currentChat?.messages || [];
+  
+  // Initialize with a first chat
+  useEffect(() => {
     if (chats.length === 0) {
       const newChatId = uuidv4();
-      setChats([{
-        id: newChatId,
-        title: 'Chat 1',
-        messages: []
-      }]);
+      setChats([
+        {
+          id: newChatId,
+          title: 'Nova Conversa',
+          messages: []
+        }
+      ]);
       setCurrentChatId(newChatId);
     }
   }, []);
 
-  // Get current chat messages
-  const messages = currentChatId 
-    ? chats.find(chat => chat.id === currentChatId)?.messages || []
-    : [];
-
-  const getCurrentChatIndex = () => {
-    return chats.findIndex(chat => chat.id === currentChatId);
-  };
-
-  const switchChat = (id: string) => {
-    setCurrentChatId(id);
-  };
-
   const newChat = () => {
+    const chatCount = chats.length + 1;
     const newChatId = uuidv4();
-    setChats(prevChats => [
-      ...prevChats,
-      {
-        id: newChatId,
-        title: `Chat ${prevChats.length + 1}`,
-        messages: []
-      }
-    ]);
+    const newChat: Chat = {
+      id: newChatId,
+      title: `Chat ${chatCount}`,
+      messages: []
+    };
+    
+    setChats(prevChats => [...prevChats, newChat]);
     setCurrentChatId(newChatId);
   };
 
-  const appendMessage = (message: Message) => {
-    const chatIndex = getCurrentChatIndex();
-    if (chatIndex === -1) return;
-
-    setChats(prevChats => {
-      const newChats = [...prevChats];
-      newChats[chatIndex] = {
-        ...newChats[chatIndex],
-        messages: [...newChats[chatIndex].messages, message]
-      };
-      return newChats;
-    });
+  const switchChat = (id: string) => {
+    const chatExists = chats.some(chat => chat.id === id);
+    if (chatExists) {
+      setCurrentChatId(id);
+    }
   };
 
-  const clearMessages = () => {
-    const chatIndex = getCurrentChatIndex();
-    if (chatIndex === -1) return;
+  const appendMessage = (message: Message) => {
+    setChats(prevChats => 
+      prevChats.map(chat => 
+        chat.id === currentChatId 
+          ? { 
+              ...chat, 
+              messages: [...chat.messages, message],
+              // Update title for first user message
+              title: chat.messages.length === 0 && message.role === 'user' 
+                ? message.content.slice(0, 20) + (message.content.length > 20 ? '...' : '') 
+                : chat.title
+            } 
+          : chat
+      )
+    );
+  };
 
-    setChats(prevChats => {
-      const newChats = [...prevChats];
-      newChats[chatIndex] = {
-        ...newChats[chatIndex],
-        messages: []
-      };
-      return newChats;
-    });
+  const clearCurrentChat = () => {
+    setChats(prevChats => 
+      prevChats.map(chat => 
+        chat.id === currentChatId 
+          ? { ...chat, messages: [] } 
+          : chat
+      )
+    );
   };
 
   const sendMessage = async (content: string) => {
-    if (!currentChatId || isLoading) return;
-
-    setIsLoading(true);
-    
-    // Add user message
-    const userMessage: Message = { role: 'user', content };
-    appendMessage(userMessage);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add user message to state
+      appendMessage({ role: 'user', content });
       
-      // Simulate assistant response
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.'
-      };
-      appendMessage(assistantMessage);
+      // Set loading state
+      setIsLoading(true);
+      
+      // Prepare the chat history in the format expected by the API
+      const chatHistory = currentChat?.messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })) || [];
+      
+      // Make API request
+      const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: content,
+          chat_history: chatHistory,
+          session_id: currentChatId // Use currentChatId as session_id for API
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get response from server');
+      }
+      
+      const data = await response.json();
+      
+      // Add assistant response to state
+      appendMessage({ role: 'assistant', content: data.response });
     } catch (error) {
       console.error('Error sending message:', error);
+      appendMessage({ 
+        role: 'assistant', 
+        content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -144,17 +166,16 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const value = {
     chats,
     currentChatId,
-    messages,
+    currentChat,
     isLoading,
     switchChat,
     newChat,
+    appendMessage,
     sendMessage,
-    clearMessages
+    clearCurrentChat,
+    // For compatibility with existing components
+    messages
   };
 
-  return (
-    <ChatContext.Provider value={value}>
-      {children}
-    </ChatContext.Provider>
-  );
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 };

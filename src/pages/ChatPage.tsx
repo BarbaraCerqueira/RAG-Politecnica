@@ -6,7 +6,9 @@ import poliLogo from '../assets/poligpt_logo.png';
 import { useChat } from '../contexts/ChatContext';
 
 const ChatPage: React.FC = () => {
-  const { messages } = useChat();
+  const { currentChat } = useChat();
+  const messages = currentChat?.messages || [];
+  
   const suggestionButtons = [
     {
       text: "Como posso me inscrever em novas matérias?",

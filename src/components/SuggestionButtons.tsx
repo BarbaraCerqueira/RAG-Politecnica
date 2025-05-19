@@ -7,7 +7,8 @@ interface SuggestionButtonsProps {
 }
 
 const SuggestionButtons: React.FC<SuggestionButtonsProps> = ({ suggestions }) => {
-  const { sendMessage, messages } = useChat();
+  const { sendMessage, currentChat } = useChat();
+  const messages = currentChat?.messages || [];
 
   // Don't show suggestions if chat has already started
   if (messages.length > 0) {
