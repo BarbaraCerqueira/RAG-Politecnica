@@ -23,6 +23,7 @@ interface ChatContextType {
   sendMessage: (content: string) => Promise<void>;
   clearCurrentChat: () => void;
   currentChat: Chat | undefined;
+  deleteChat: (id: string) => void;
 }
 
 // Create the context with a default value
@@ -69,6 +70,24 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (chatExists) {
       pendingChatId.current = null;
       setCurrentChatId(id);
+    }
+  };
+
+  const deleteChat = (id: string) => {
+    setChats(prevChats => prevChats.filter(chat => chat.id !== id));
+    
+    // If we're deleting the current chat, switch to another one or create a new one
+    if (id === currentChatId) {
+      if (chats.length > 1) {
+        // Find the next available chat to switch to
+        const nextChat = chats.find(chat => chat.id !== id);
+        if (nextChat) {
+          setCurrentChatId(nextChat.id);
+        }
+      } else {
+        // If this was the last chat, create a new one
+        newChat();
+      }
     }
   };
 
@@ -178,6 +197,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     appendMessage,
     sendMessage,
     clearCurrentChat,
+    deleteChat,
     // For compatibility with existing components
     messages
   };

@@ -1,10 +1,10 @@
 import React, { useState, FormEvent, useRef, useEffect } from 'react';
-import { Send, Trash2 } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
-  const { sendMessage, isLoading, clearCurrentChat, currentChat } = useChat();
+  const { sendMessage, isLoading } = useChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -42,16 +42,7 @@ const ChatInput: React.FC = () => {
   };
 
   return (
-    <div className="flex items-start gap-2">
-      {currentChat && currentChat.messages.length > 0 && (
-        <button
-          onClick={clearCurrentChat}
-          className="p-3 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors self-end"
-          title="Limpar conversa"
-        >
-          <Trash2 size={20} />
-        </button>
-      )}
+    <div className="flex items-start">
       <form 
         onSubmit={handleSubmit} 
         className="relative flex items-end flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg"
