@@ -22,7 +22,7 @@ client = SecretClient(vault_url=kv_uri, credential=credential)
 azure_search_endpoint = client.get_secret("azure-search-endpoint").value
 azure_search_admin_key = client.get_secret("azure-search-admin-key").value
 azure_search_credential = AzureKeyCredential(azure_search_admin_key)
-embedding_dimensions = 3072
+embedding_dimensions = 1024
 project_name = "poligpt"
 
 

@@ -1,7 +1,5 @@
 {
-    "appService.showBuildDuringDeployPrompt": false,
-    "azureFunctions.projectSubpath": "rag-application\\backend",
-    "azureFunctions.deploySubpath": "rag-application\\backend",
+    "azureFunctions.deploySubpath": ".",
     "azureFunctions.scmDoBuildDuringDeployment": true,
     "azureFunctions.pythonVenv": ".venv",
     "azureFunctions.projectLanguage": "Python",

@@ -23,7 +23,7 @@ azure_search_admin_key = client.get_secret("azure-search-admin-key").value
 azure_search_credential = AzureKeyCredential(azure_search_admin_key)
 custom_embedding_api_key = client.get_secret("custom-embedding-function-key").value
 embedding_model = "text-embedding-3-large"
-embedding_dimensions = 3072
+embedding_dimensions = 1024
 project_name = "poligpt"
 
 
@@ -37,8 +37,8 @@ def create_skillset():
         default_language_code="pt-BR", 
         text_split_mode="pages",  
         context="/document",  
-        maximum_page_length=2000,  
-        page_overlap_length=100,  
+        maximum_page_length=4000,
+        page_overlap_length=200,
         inputs=[  
             InputFieldMappingEntry(name="text", source="/document/ds_content_document"),
         ],  
@@ -70,7 +70,7 @@ def create_skillset():
     )
 
     index_projection = SearchIndexerIndexProjection(  
-        selectors=[  
+        selectors=[
             SearchIndexerIndexProjectionSelector(  
                 target_index_name=f"{project_name}-index",  
                 parent_key_field_name="parent_id",  

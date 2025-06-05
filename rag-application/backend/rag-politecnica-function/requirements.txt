@@ -1,6 +1,0 @@
-azure-functions
-langchain
-langchain-openai
-azure-identity
-azure-keyvault-secrets
-azure-search-documents
