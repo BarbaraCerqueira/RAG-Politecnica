@@ -3,8 +3,8 @@
  * Contains methods for interacting with the backend API
  */
 
-// The API endpoint should be moved to environment variables in production
-const API_URL = 'https://api-endpoint.example.com';
+// Using the environment variable for the API endpoint
+const API_URL = import.meta.env.VITE_API_ENDPOINT;
 
 export interface ChatRequest {
   query: string;
@@ -23,7 +23,7 @@ export interface ChatResponse {
  */
 export const sendChatMessage = async (data: ChatRequest): Promise<ChatResponse> => {
   try {
-    const response = await fetch(`${API_URL}/chat`, {
+    const response = await fetch(`${API_URL}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

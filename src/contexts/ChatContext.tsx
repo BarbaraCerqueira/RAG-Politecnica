@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { sendChatMessage } from '../services/api';
 
 // Define types for our context
 export interface Message {
@@ -32,9 +33,6 @@ export const ChatContext = createContext<ChatContextType | undefined>(undefined)
 interface ChatProviderProps {
   children: ReactNode;
 }
-
-// API endpoint - should be moved to env variable in production
-const API_ENDPOINT = 'https://api-endpoint.example.com/chat';
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -155,27 +153,15 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         content: msg.content
       })) || [];
       
-      // Make API request
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: content,
-          chat_history: chatHistory,
-          session_id: currentChatId
-        }),
+      // Use the API service instead of direct fetch
+      const response = await sendChatMessage({
+        query: content,
+        chat_history: chatHistory,
+        session_id: currentChatId
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to get response from server');
-      }
-      
-      const data = await response.json();
-      
       // Add assistant response to state
-      appendMessage({ role: 'assistant', content: data.response });
+      appendMessage({ role: 'assistant', content: response.response });
     } catch (error) {
       console.error('Error sending message:', error);
       appendMessage({ 
