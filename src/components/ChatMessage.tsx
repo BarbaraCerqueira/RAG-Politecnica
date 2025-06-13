@@ -2,6 +2,7 @@ import React from 'react';
 import { Message } from '../contexts/ChatContext';
 import userAvatar from '../assets/user_avatar.png';
 import assistantAvatar from '../assets/assistant_avatar.png';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessageProps {
   message: Message;
@@ -31,7 +32,31 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               : 'bg-white/80 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-tl-none shadow-md'
           }`}
         >
-          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+          {message.role === 'assistant' ? (
+            <ReactMarkdown
+              components={{
+                p: (props) => (
+                  <p className="prose prose-sm dark:prose-invert max-w-none" {...props} />
+                ),
+                a: (props) => (
+                  <a className="text-blue-600 underline dark:text-blue-400" {...props} />
+                ),
+                ul: (props) => (
+                  <ul className="list-disc pl-6 prose-sm dark:prose-invert" {...props} />
+                ),
+                ol: (props) => (
+                  <ol className="list-decimal pl-6 prose-sm dark:prose-invert" {...props} />
+                ),
+                li: (props) => (
+                  <li className="mb-1" {...props} />
+                )
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            <p className="whitespace-pre-wrap">{message.content}</p>
+          )}
         </div>
       </div>
     </div>
