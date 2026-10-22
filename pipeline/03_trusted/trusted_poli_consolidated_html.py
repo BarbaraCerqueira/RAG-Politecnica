@@ -9,7 +9,7 @@ import sys
 from bs4 import BeautifulSoup
 from multiprocessing.pool import ThreadPool
 
-etl_folder_path = './../../etl-pipeline/'
+etl_folder_path = './../../pipeline/'
 sys.path.append(etl_folder_path)
 
 from delta.tables import DeltaTable

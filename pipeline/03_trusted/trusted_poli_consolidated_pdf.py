@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Pool
 
-etl_folder_path = './../../etl-pipeline/'
+etl_folder_path = './../../pipeline/'
 sys.path.append(etl_folder_path)
 
 from delta.tables import DeltaTable

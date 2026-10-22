@@ -12,7 +12,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
-etl_folder_path = './../../etl-pipeline/'
+etl_folder_path = './../../pipeline/'
 sys.path.append(etl_folder_path)
 
 from pyspark.sql.utils import AnalysisException
