@@ -133,3 +133,20 @@ __blobstorage__
 __queuestorage__
 __azurite_db*__.json
 .python_packages
+# Node / frontend
+node_modules/
+dist/
+*.local
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+*.auto.tfvars
+secrets.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

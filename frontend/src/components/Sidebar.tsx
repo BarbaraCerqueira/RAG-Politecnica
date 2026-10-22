@@ -1,0 +1,122 @@
+import React, { useState } from 'react';
+import { MessageSquare, Info, Link2, PlusSquare, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import poliLogo from '../assets/poligpt_logo.png';
+import { useChat } from '../hooks/useChat';
+
+interface SidebarProps {
+  onCloseMobile: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
+  const { chats, currentChatId, newChat, switchChat, deleteChat } = useChat();
+  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
+  
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Logo */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <img src={poliLogo} alt="PoliGPT" className="mx-auto w-40" />
+      </div>
+      
+      {/* New Chat Button */}
+      <div className="px-4 py-4">
+        <button
+          onClick={() => { newChat(); onCloseMobile(); }}
+          className="flex items-center w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <PlusSquare className="mr-3 h-5 w-5" />
+          <span className="font-medium">Nova Conversa</span>
+        </button>
+      </div>
+      
+      {/* Chat List */}
+      <div className="flex-1 flex flex-col min-h-0">
+
+        <div className="flex-1 overflow-y-auto space-y-1 scrollbar scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 
+          scrollbar-track-transparent hover:scrollbar-thumb-gray-400 
+          dark:hover:scrollbar-thumb-gray-600 scrollbar-thumb-rounded-full px-2 pb-2 pt-2">
+          {chats.map(chat => (
+            <div 
+              key={chat.id} 
+              className="flex items-center relative group"
+            >
+              <button
+                onClick={() => { switchChat(chat.id); onCloseMobile(); }}
+                className={`flex items-center w-full px-4 py-2 rounded-lg transition-colors ${
+                  chat.id === currentChatId 
+                    ? 'bg-blue-600/15 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
+                    : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <MessageSquare className="mr-3 h-4 w-4 flex-shrink-0" />
+                <span className={`font-medium truncate ${chat.id === currentChatId ? 'mr-7' : 'group-hover:mr-7'}`}>
+                  {chat.title}
+                </span>
+              </button>
+              <button
+                onClick={(e) => { 
+                  e.stopPropagation();
+                  deleteChat(chat.id); 
+                }}
+                className={`absolute right-2 p-1.5 text-gray-500 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-all ${
+                  chat.id === currentChatId 
+                    ? 'opacity-100' 
+                    : 'opacity-0 group-hover:opacity-100'
+                }`}
+                title="Excluir conversa"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Information */}
+      <div className="border-t border-gray-200 dark:border-gray-700 mt-auto overflow-hidden">
+        <button 
+          onClick={() => setIsAboutExpanded(!isAboutExpanded)}
+          className="flex items-center justify-between w-full px-4 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <div className="flex items-center">
+            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 mr-3">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <span className="font-medium text-gray-900 dark:text-gray-100">Sobre o PoliGPT</span>
+          </div>
+          {isAboutExpanded ? (
+            <ChevronUp className="h-5 w-5 text-gray-500" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-gray-500" />
+          )}
+        </button>
+        
+        <div 
+          className={`px-4 overflow-hidden transition-all duration-300 ease-in-out ${
+            isAboutExpanded ? "max-h-96 opacity-100 pb-4" : "max-h-0 opacity-0 pb-0"
+          }`}
+        >
+          <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border border-blue-100 dark:border-gray-700 text-sm">
+            <p className="text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
+              O PoliGPT é um assistente virtual criado para auxiliar alunos da Escola Politécnica da Universidade 
+              Federal do Rio de Janeiro em suas dúvidas. Este chatbot foi alimentado com dados obtidos a 
+              partir do website da Escola Politécnica.
+            </p>
+
+            <a 
+              href="https://www.poli.ufrj.br/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center py-2 px-3 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+            >
+              <Link2 className="mr-2 h-4 w-4" />
+              Visitar Politécnica	
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
