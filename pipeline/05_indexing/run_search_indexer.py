@@ -6,7 +6,7 @@
 # COMMAND ----------
 
 import sys
-etl_folder_path = './../../etl-pipeline/'
+etl_folder_path = './../../pipeline/'
 sys.path.append(etl_folder_path)
 from utils import get_indexer_client, run_indexer_with_retry
 
