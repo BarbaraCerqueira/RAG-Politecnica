@@ -22,6 +22,7 @@ azure_search_endpoint = client.get_secret("azure-search-endpoint").value
 azure_search_admin_key = client.get_secret("azure-search-admin-key").value
 azure_search_credential = AzureKeyCredential(azure_search_admin_key)
 custom_embedding_api_key = client.get_secret("custom-embedding-function-key").value
+custom_embedding_url = client.get_secret("custom-embedding-function-url").value
 embedding_model = "text-embedding-3-large"
 embedding_dimensions = 1024
 project_name = "poligpt"
@@ -51,7 +52,7 @@ def create_skillset():
         name=f"{project_name}-webapiskill",
         description="Skill to generate embeddings via Custom Web API",  
         context="/document/pages/*", 
-        uri="https://openai-embeddings-function.azurewebsites.net/api/custom_web_api/openai_embeddings",
+        uri=custom_embedding_url,
         http_headers={
             "x-functions-key" : custom_embedding_api_key,
             "model" : embedding_model,
