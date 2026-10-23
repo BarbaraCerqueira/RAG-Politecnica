@@ -30,6 +30,13 @@ locals {
     "Projeto"       = "poligpt"
     "ResourceClass" = "SingleNode"
   }
+  cluster_spark_env_vars = {
+    # Onde o PyMuPDF encontra os modelos de idioma do Tesseract (instalados pelo init script).
+    "TESSDATA_PREFIX" = "/usr/share/tesseract-ocr/4.00/tessdata"
+    # Uma thread por OCR: o notebook já paraleliza com vários processos, e threads internas
+    # do Tesseract disputariam os mesmos núcleos (recomendação da documentação do Tesseract).
+    "OMP_THREAD_LIMIT" = "1"
+  }
 
   pipeline_repo_url = "https://github.com/BarbaraCerqueira/poligpt.git"
 }
@@ -44,6 +51,14 @@ resource "databricks_secret_scope" "main" {
     resource_id = azurerm_key_vault.main.id
     dns_name    = azurerm_key_vault.main.vault_uri
   }
+}
+
+# ---------------------------------------------------------------------------
+# Init script que instala o Tesseract OCR nos clusters (fonte: pipeline/setup/init-scripts/)
+# ---------------------------------------------------------------------------
+resource "databricks_workspace_file" "install_tesseract" {
+  source = "${path.module}/../pipeline/setup/init-scripts/install_tesseract.sh"
+  path   = "/Shared/poligpt/init-scripts/install_tesseract.sh"
 }
 
 # ---------------------------------------------------------------------------
@@ -71,12 +86,19 @@ resource "databricks_cluster" "interactive" {
   runtime_engine          = "STANDARD"
   enable_elastic_disk     = true
   spark_conf              = local.cluster_spark_conf
+  spark_env_vars          = local.cluster_spark_env_vars
   custom_tags             = local.cluster_custom_tags
 
   azure_attributes {
     availability       = "ON_DEMAND_AZURE"
     first_on_demand    = 1
     spot_bid_max_price = -1
+  }
+
+  init_scripts {
+    workspace {
+      destination = databricks_workspace_file.install_tesseract.path
+    }
   }
 
   dynamic "library" {
@@ -142,12 +164,19 @@ resource "databricks_job" "pipeline" {
       runtime_engine      = "STANDARD"
       enable_elastic_disk = true
       spark_conf          = local.cluster_spark_conf
+      spark_env_vars      = local.cluster_spark_env_vars
       custom_tags         = local.cluster_custom_tags
 
       azure_attributes {
         availability       = "ON_DEMAND_AZURE"
         first_on_demand    = 1
         spot_bid_max_price = -1
+      }
+
+      init_scripts {
+        workspace {
+          destination = databricks_workspace_file.install_tesseract.path
+        }
       }
     }
   }

@@ -10,7 +10,7 @@ import sys
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from multiprocessing.pool import ThreadPool
+
 from multiprocessing import Pool
 
 etl_folder_path = './../../pipeline/'
@@ -34,6 +34,19 @@ output_path = "/mnt/adlstrusted/poli_consolidated_pdf/"
 checkpoint_path = "/mnt/adlstrusted/checkpoints/poli_consolidated_pdf/"
 num_processes = 4
 
+# OCR (Tesseract, via PyMuPDF) para páginas sem texto extraível. Uma página passa por OCR quando:
+#   1. o texto existente é ilegível (fontes sem mapeamento Unicode viram o caractere U+FFFD); ou
+#   2. não tem camada de texto (menos de `ocr_min_chars_per_page` caracteres) e contém imagens; ou
+#   3. é dominada por imagem (digitalização), mesmo com algum texto digital por cima (carimbo, cabeçalho).
+# Imagens dentro de páginas digitais comuns (logos, fotos, gráficos) não passam por OCR.
+ocr_language = "por"
+ocr_dpi = 300                        # resolução recomendada para o Tesseract
+ocr_min_chars_per_page = 50          # abaixo disso, a página é considerada sem camada de texto
+ocr_min_image_coverage = 0.1         # ignora páginas sem texto que só têm imagens pequenas (ex.: logo)
+ocr_scanned_image_coverage = 0.8     # fração da página coberta por imagem para considerá-la digitalizada
+ocr_scanned_max_chars = 300          # máximo de texto digital presente em página com imagem para permitir OCR
+ocr_max_illegible_ratio = 0.1        # fração de caracteres ilegíveis (U+FFFD) que indica texto corrompido
+
 # COMMAND ----------
 
 # Widgets para receber os inputs do Workflow
@@ -49,22 +62,55 @@ num_processes = 4
 
 # COMMAND ----------
 
+# Função para medir a fração da página coberta por imagens
+def image_coverage(page):
+    page_area = abs(page.rect)
+    if page_area == 0:
+        return 0.0
+    covered = sum(abs(fitz.Rect(img["bbox"]) & page.rect) for img in page.get_image_info())
+    return min(covered / page_area, 1.0)
+
+# Função para decidir se uma página precisa de OCR (critérios descritos nos parâmetros)
+def page_needs_ocr(page, text):
+    chars = len(text.strip())
+    if chars and text.count("�") / chars > ocr_max_illegible_ratio:
+        return True
+    coverage = image_coverage(page)
+    if chars < ocr_min_chars_per_page:
+        return coverage >= ocr_min_image_coverage
+    return coverage >= ocr_scanned_image_coverage and chars <= ocr_scanned_max_chars
+
+# Função para extrair o texto de uma página, aplicando OCR quando necessário
+def extract_page_text(page):
+    text = page.get_text("text")
+    if not page_needs_ocr(page, text):
+        return text, False
+    try:
+        textpage = page.get_textpage_ocr(language=ocr_language, dpi=ocr_dpi, full=True)
+        return page.get_text("text", textpage=textpage), True
+    except Exception as e:
+        print(f"Erro no OCR da página {page.number}: {e}")
+        return text, False
+
 # Função para extrair o conteúdo textual e metadados de um PDF localizado no ADLS
-def extract_data_from_pdf(pdf_path):    
+def extract_data_from_pdf(pdf_path):
     try:
         with fitz.open(f"/dbfs{pdf_path}") as pdf:
             metadata = pdf.metadata if pdf is not None else {}
             text = ""
+            ocr_pages = 0
             for page in pdf:
-                text += page.get_text("text")
-        return text, metadata
+                page_text, used_ocr = extract_page_text(page)
+                text += page_text
+                ocr_pages += used_ocr
+        return text, metadata, ocr_pages
     except Exception as e:
         print(f"Erro ao processar {pdf_path}: {e}")
-        return '', {}
+        return '', {}, 0
 
 # Função para gerar o Row com o conteúdo do PDF
 def process_pdf(pdf_path):
-    pdf_text, pdf_metadata = extract_data_from_pdf(pdf_path)
+    pdf_text, pdf_metadata, ocr_pages = extract_data_from_pdf(pdf_path)
 
     if not isinstance(pdf_metadata, dict):
         pdf_metadata = {}
@@ -82,7 +128,8 @@ def process_pdf(pdf_path):
         subject=get_metadata_value('subject'),
         creation_date=get_metadata_value('creationDate'),
         modification_date=get_metadata_value('modDate'),
-        content=str(pdf_text) if pdf_text is not None else ''
+        content=str(pdf_text) if pdf_text is not None else '',
+        ocr_pages=int(ocr_pages)
     )
 
 # COMMAND ----------
@@ -168,18 +215,17 @@ pdf_files = list_all_files(base_dir=input_base_path, file_format="pdf", min_modi
 # COMMAND ----------
 
 if pdf_files:
-    # Multithreading para paralelizar o processo de leitura de PDFs ou HTMLs
-    pool = ThreadPool(processes=num_processes)
+    # Processos (e não threads) para paralelizar a leitura e o OCR dos PDFs: o PyMuPDF não é thread-safe,
+    # e com threads o processamento ficaria, na prática, sequencial.
+    with Pool(processes=num_processes) as pool:
+        pdf_text_data = pool.map(process_pdf, pdf_files, chunksize=4)
 
-    # Processar os PDFs em paralelo
-    pdf_text_data = pool.map(process_pdf, pdf_files)
+    # Resumo do OCR
+    ocr_docs = [row for row in pdf_text_data if row.ocr_pages > 0]
+    print(f"PDFs processados: {len(pdf_text_data)} | PDFs com OCR: {len(ocr_docs)} | Páginas com OCR: {sum(row.ocr_pages for row in ocr_docs)}")
 
     # Criar o DataFrame a partir da lista de Rows
     df_pdf = spark.createDataFrame(pdf_text_data)
-
-    # Fechar o pool de processos
-    pool.close()
-    pool.join()
 
 else:
     dbutils.notebook.exit("Não foram encontrados arquivos PDF novos ou atualizados para processar. O processamento será interrompido.")

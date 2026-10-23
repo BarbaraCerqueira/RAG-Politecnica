@@ -64,3 +64,21 @@ resource "azurerm_key_vault_secret" "embedding_function_key" {
 
   depends_on = [azurerm_key_vault_access_policy.admin]
 }
+
+# Endereço e chave da API do chat, para quem precisar chamá-la (frontend, testes).
+# Ficam sincronizados automaticamente se a função for recriada.
+resource "azurerm_key_vault_secret" "chat_function_url" {
+  name         = "chat-function-url"
+  key_vault_id = azurerm_key_vault.main.id
+  value        = "https://${azurerm_function_app_flex_consumption.chat.default_hostname}/api/chatcompletion"
+
+  depends_on = [azurerm_key_vault_access_policy.admin]
+}
+
+resource "azurerm_key_vault_secret" "chat_function_key" {
+  name         = "chat-function-key"
+  key_vault_id = azurerm_key_vault.main.id
+  value        = data.azurerm_function_app_host_keys.chat.default_function_key
+
+  depends_on = [azurerm_key_vault_access_policy.admin]
+}
