@@ -5,8 +5,10 @@
 
 # COMMAND ----------
 
+import os
 import re
 import sys
+import time
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -79,6 +81,15 @@ def page_needs_ocr(page, text):
     if chars < ocr_min_chars_per_page:
         return coverage >= ocr_min_image_coverage
     return coverage >= ocr_scanned_image_coverage and chars <= ocr_scanned_max_chars
+
+# Função executada ao iniciar cada processo de OCR, que descarta o stderr nativo do processo. O Tesseract e o Leptonica
+# escrevem nele avisos ("Image too small to scale", "Line cannot be recognized") sobre fragmentos estreitos demais
+# para reconhecer, como bordas de tabela e traços, que são ignorados sem afetar o texto extraído. Em PDFs com
+# tabelas, são milhares de linhas, e a saída de uma célula de job tem limite de tamanho (8 MB).
+def silence_native_stderr():
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull, 2)
+    os.close(devnull)
 
 # Função para extrair o texto de uma página, aplicando OCR quando necessário
 def extract_page_text(page):
@@ -217,8 +228,16 @@ pdf_files = list_all_files(base_dir=input_base_path, file_format="pdf", min_modi
 if pdf_files:
     # Processos (e não threads) para paralelizar a leitura e o OCR dos PDFs: o PyMuPDF não é thread-safe,
     # e com threads o processamento ficaria, na prática, sequencial.
-    with Pool(processes=num_processes) as pool:
-        pdf_text_data = pool.map(process_pdf, pdf_files, chunksize=4)
+    # Os resultados chegam conforme cada PDF termina, para acompanhar o progresso; a ordem não importa.
+    pdf_text_data = []
+    ocr_pages_so_far = 0
+    start = time.time()
+    with Pool(processes=num_processes, initializer=silence_native_stderr) as pool:
+        for row in pool.imap_unordered(process_pdf, pdf_files):
+            pdf_text_data.append(row)
+            ocr_pages_so_far += row.ocr_pages
+            done = len(pdf_text_data)
+            print(f"{done}/{len(pdf_files)} PDFs ({done / len(pdf_files):.0%}) | páginas com OCR: {ocr_pages_so_far} | {(time.time() - start) / 60:.1f} min", flush=True)
 
     # Resumo do OCR
     ocr_docs = [row for row in pdf_text_data if row.ocr_pages > 0]
