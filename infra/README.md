@@ -43,7 +43,7 @@ Nenhum segredo fica no código ou nos `.tfvars`. Os valores são guardados no Ke
 
 - A Function do chat lê a chave da OpenAI e do AI Search por **referências ao Key Vault** nas app settings (`@Microsoft.KeyVault(...)`), usando sua identidade gerenciada.
 - A embedding-function lê a chave da OpenAI diretamente do Key Vault no código, também com identidade gerenciada.
-- A senha do SQL é lida como recurso efêmero e enviada como atributo *write-only*, sem ser gravada no state.
+- A senha do administrador do SQL (usada pelo Databricks e pela fonte de dados do AI Search) fica só no Key Vault. O Terraform a lê durante a execução como recurso **efêmero** (o valor é descartado ao final, sem ir para o plano nem para o state) e a envia num atributo **write-only** (`administrator_login_password_wo`), que a Azure recebe mas o Terraform não grava. Detalhes e passo a passo para trocar a senha estão em [`sql.tf`](sql.tf).
 
 ## Deploy do código das Functions
 

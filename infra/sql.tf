@@ -1,4 +1,20 @@
-# Senha do admin do SQL, lida do Key Vault só durante a execução (efêmera: não vai para o state).
+# ---------------------------------------------------------------------------
+# Sobre a senha do administrador do SQL:
+#
+# A senha mora só no Key Vault (secret "sql-admin-password"). Quem a usa:
+#   - Databricks: o notebook da camada refined grava no banco (via secret scope)
+#   - AI Search: a fonte de dados lê do banco (connection string do secret "sqldb-connection-string")
+#
+# O Terraform precisa informar a senha ao declarar o servidor, mas não deve guardá-la:
+#   - "ephemeral": o Terraform lê o secret do Key Vault durante a execução e descarta
+#     o valor ao terminar; ele não é salvo no plano nem no state.
+#   - "write-only" (atributo *_wo): o valor é enviado para a Azure, mas o Terraform não
+#     o grava no state nem o compara depois. Por isso ele só é reenviado quando o número
+#     de versão (*_wo_version) muda.
+#
+# Para trocar a senha: gravar a nova no Key Vault (e atualizar "sqldb-connection-string"),
+# remover o ignore_changes abaixo e incrementar administrator_login_password_wo_version.
+# ---------------------------------------------------------------------------
 ephemeral "azurerm_key_vault_secret" "sql_admin_password" {
   name         = "sql-admin-password"
   key_vault_id = azurerm_key_vault.main.id
@@ -12,14 +28,14 @@ resource "azurerm_mssql_server" "main" {
   version             = "12.0"
   administrator_login = "sql-poligpt-admin"
 
-  # Write-only: o valor é enviado à Azure mas nunca gravado no state.
-  # Para trocar a senha: atualizar o secret no Key Vault e incrementar a versão.
   administrator_login_password_wo         = ephemeral.azurerm_key_vault_secret.sql_admin_password.value
   administrator_login_password_wo_version = 1
 
   lifecycle {
     prevent_destroy = true
-    # TEMPORÁRIO: evita reenviar a senha durante a importação inicial.
+    # Na importação o servidor não tinha número de versão da senha; sem isto, o Terraform
+    # reenviaria a senha (a mesma do Key Vault) no próximo apply. Hoje, na prática,
+    # o Terraform não altera a senha do servidor sql.
     ignore_changes = [administrator_login_password_wo_version]
   }
 }
