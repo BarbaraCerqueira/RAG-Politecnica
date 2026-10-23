@@ -1,6 +1,6 @@
 # Infraestrutura (Terraform)
 
-Infraestrutura do PoliGPT na Azure como código. Todos os recursos do resource group `rg-poligpt-dev-eastus2` foram importados a partir do ambiente existente.
+Infraestrutura do PoliGPT na Azure como código. Os recursos do resource group `rg-poligpt-dev-eastus2` foram importados a partir do ambiente existente, com alguns pequenos ajustes posteriores.
 
 ## Pré-requisitos
 
@@ -23,13 +23,13 @@ terraform apply
 |---|---|
 | `versions.tf` | Versões, backend do state e configuração do provider |
 | `main.tf` | Resource group |
-| `storage.tf` | Data Lake (ADLS Gen2) e containers das camadas |
-| `key_vault.tf` | Key Vault e políticas de acesso |
+| `storage.tf` | Data Lake (ADLS Gen2) com os containers das camadas, e storage interno das Function Apps |
+| `key_vault.tf` | Key Vault, políticas de acesso e os secrets derivados de outros recursos (URL e chave da embedding-function) |
 | `sql.tf` | Servidor e banco Azure SQL |
-| `search.tf` | Azure AI Search |
-| `functions.tf` | Function Apps do chat e da função de embeddings |
+| `search.tf` | Serviço do Azure AI Search (os objetos internos são criados por `search/setup/`) |
+| `functions.tf` | Function Apps do chat e da embedding-function, no plano Flex Consumption |
 | `web.tf` | Static Web App do frontend |
-| `monitoring.tf` | Application Insights |
+| `monitoring.tf` | Log Analytics e Application Insights |
 | `databricks.tf` | Workspace do Databricks, secret scope (Key Vault), Git folder, cluster interativo e job do pipeline |
 | `iam.tf` | Permissões (role assignments) |
 
@@ -39,7 +39,22 @@ O state fica em `rg-poligpt-tfstate/stpoligpttfstate/tfstate/poligpt-dev.tfstate
 
 ## Segredos
 
-Nenhum segredo fica no código ou nos `.tfvars`. Os valores são guardados no Key Vault (`kv-poligpt-dev-eastus2`) e lidos em tempo de execução. A senha do SQL é lida como recurso efêmero e enviada como atributo *write-only*, sem ser gravada no state.
+Nenhum segredo fica no código ou nos `.tfvars`. Os valores são guardados no Key Vault (`kv-poligpt-dev-eastus2`) e lidos em tempo de execução:
+
+- A Function do chat lê a chave da OpenAI e do AI Search por **referências ao Key Vault** nas app settings (`@Microsoft.KeyVault(...)`), usando sua identidade gerenciada.
+- A embedding-function lê a chave da OpenAI diretamente do Key Vault no código, também com identidade gerenciada.
+- A senha do administrador do SQL (usada pelo Databricks e pela fonte de dados do AI Search) fica só no Key Vault. O Terraform a lê durante a execução como recurso **efêmero** (o valor é descartado ao final, sem ir para o plano nem para o state) e a envia num atributo **write-only** (`administrator_login_password_wo`), que a Azure recebe mas o Terraform não grava. Detalhes e passo a passo para trocar a senha estão em [`sql.tf`](sql.tf).
+
+## Deploy do código das Functions
+
+O Terraform cria as Function Apps, mas não publica o código. O deploy é feito com o Azure Functions Core Tools:
+
+```bash
+cd backend && func azure functionapp publish func-poligpt-chat-dev --python
+cd search/embedding-function && func azure functionapp publish func-poligpt-embed-dev --python
+```
+
+Se a embedding-function for recriada, rode `search/setup/create_skillset.py` para o skillset do AI Search apontar para a nova URL e chave.
 
 ## Proteções
 

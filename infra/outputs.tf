@@ -1,6 +1,11 @@
 output "chat_api_url" {
-  description = "URL base da API do chat."
-  value       = "https://${azurerm_linux_function_app.chat.default_hostname}/api"
+  description = "Endpoint da API do chat."
+  value       = "https://${azurerm_function_app_flex_consumption.chat.default_hostname}/api/chatcompletion"
+}
+
+output "embedding_function_url" {
+  description = "Endpoint da embedding-function chamada pelo skillset do AI Search."
+  value       = "https://${azurerm_function_app_flex_consumption.embedding.default_hostname}/api/custom_web_api/openai_embeddings"
 }
 
 output "frontend_url" {

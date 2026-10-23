@@ -31,9 +31,7 @@ locals {
     "ResourceClass" = "SingleNode"
   }
 
-  # Nome antigo do repositório (o GitHub redireciona para "poligpt"). Trocar a URL recria o Git folder,
-  # então a atualização fica para a etapa de renomeação.
-  pipeline_repo_url = "https://github.com/BarbaraCerqueira/RAG-Politecnica.git"
+  pipeline_repo_url = "https://github.com/BarbaraCerqueira/poligpt.git"
 }
 
 # ---------------------------------------------------------------------------
@@ -53,7 +51,7 @@ resource "databricks_secret_scope" "main" {
 # ---------------------------------------------------------------------------
 resource "databricks_repo" "poligpt" {
   url    = local.pipeline_repo_url
-  path   = "/Repos/barbaracerqueira9901@gmail.com/RAG-Politecnica"
+  path   = "/Repos/barbaracerqueira9901@gmail.com/poligpt"
   branch = "main"
 }
 

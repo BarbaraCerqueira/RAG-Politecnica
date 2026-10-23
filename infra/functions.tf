@@ -1,26 +1,45 @@
+locals {
+  key_vault_ref = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=%s)"
+}
+
 # ---------------------------------------------------------------------------
 # API do chat (backend/)
 # ---------------------------------------------------------------------------
 resource "azurerm_service_plan" "chat" {
-  name                = "ASP-rgpoligptdeveastus2-89e9"
+  name                = "asp-poligpt-chat-dev"
   resource_group_name = azurerm_resource_group.main.name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = "Y1"
+  sku_name            = "FC1"
 }
 
-resource "azurerm_linux_function_app" "chat" {
-  name                       = "rag-politecnica-function"
-  resource_group_name        = azurerm_resource_group.main.name
-  location                   = var.location
-  service_plan_id            = azurerm_service_plan.chat.id
-  storage_account_name       = azurerm_storage_account.datalake.name
-  storage_account_access_key = azurerm_storage_account.datalake.primary_access_key
-  https_only                 = true
-  builtin_logging_enabled    = false
-  client_certificate_mode    = "Required"
+resource "azurerm_function_app_flex_consumption" "chat" {
+  name                = "func-poligpt-chat-dev"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  service_plan_id     = azurerm_service_plan.chat.id
+
+  storage_container_type      = "blobContainer"
+  storage_container_endpoint  = "${azurerm_storage_account.functions.primary_blob_endpoint}${azurerm_storage_container.function_deployments["chat"].name}"
+  storage_authentication_type = "StorageAccountConnectionString"
+  storage_access_key          = azurerm_storage_account.functions.primary_access_key
+
+  runtime_name           = "python"
+  runtime_version        = "3.11"
+  instance_memory_in_mb  = 2048
+  maximum_instance_count = 10
+
+  https_only                                     = true
+  webdeploy_publish_basic_authentication_enabled = false
+
+  # Identidade usada para ler os segredos do Key Vault (referências em app_settings).
+  identity {
+    type = "SystemAssigned"
+  }
 
   app_settings = {
+    OPENAI_API_KEY                    = format(local.key_vault_ref, "openai-api-key")
+    AZURE_SEARCH_ADMIN_KEY            = format(local.key_vault_ref, "azure-search-admin-key")
     AZURE_SEARCH_ENDPOINT             = "https://${azurerm_search_service.main.name}.search.windows.net"
     AZURESEARCH_FIELDS_CONTENT        = "chunk"
     AZURESEARCH_FIELDS_CONTENT_VECTOR = "vector"
@@ -35,30 +54,11 @@ resource "azurerm_linux_function_app" "chat" {
   }
 
   site_config {
-    ftps_state                             = "FtpsOnly"
     application_insights_connection_string = azurerm_application_insights.main.connection_string
 
-    application_stack {
-      python_version = "3.11"
-    }
-
     cors {
-      allowed_origins = var.chat_cors_allowed_origins
+      allowed_origins = concat(var.chat_cors_allowed_origins, ["https://${azurerm_static_web_app.frontend.default_host_name}"])
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      # TEMPORÁRIO: as chaves ainda estão em texto puro nas configurações da Function.
-      # Serão trocadas por referências ao Key Vault na etapa de segurança do backend.
-      app_settings["OPENAI_API_KEY"],
-      app_settings["AZURE_SEARCH_ADMIN_KEY"],
-      # Tags "hidden-link" criadas automaticamente pelo portal para o Application Insights.
-      tags,
-      # Vazio no recurso importado, equivalente a "Allow".
-      site_config[0].ip_restriction_default_action,
-      site_config[0].scm_ip_restriction_default_action,
-    ]
   }
 }
 
@@ -66,53 +66,44 @@ resource "azurerm_linux_function_app" "chat" {
 # Função de embeddings chamada pelo skillset do AI Search (search/embedding-function/)
 # ---------------------------------------------------------------------------
 resource "azurerm_service_plan" "embedding" {
-  name                = "ASP-rgpoligptdeveastus2-9b42"
+  name                = "asp-poligpt-embed-dev"
   resource_group_name = azurerm_resource_group.main.name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = "Y1"
+  sku_name            = "FC1"
 }
 
-resource "azurerm_linux_function_app" "embedding" {
-  name                                           = "openai-embeddings-function"
-  resource_group_name                            = azurerm_resource_group.main.name
-  location                                       = var.location
-  service_plan_id                                = azurerm_service_plan.embedding.id
-  storage_account_name                           = azurerm_storage_account.datalake.name
-  storage_account_access_key                     = azurerm_storage_account.datalake.primary_access_key
+resource "azurerm_function_app_flex_consumption" "embedding" {
+  name                = "func-poligpt-embed-dev"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  service_plan_id     = azurerm_service_plan.embedding.id
+
+  storage_container_type      = "blobContainer"
+  storage_container_endpoint  = "${azurerm_storage_account.functions.primary_blob_endpoint}${azurerm_storage_container.function_deployments["embedding"].name}"
+  storage_authentication_type = "StorageAccountConnectionString"
+  storage_access_key          = azurerm_storage_account.functions.primary_access_key
+
+  runtime_name           = "python"
+  runtime_version        = "3.11"
+  instance_memory_in_mb  = 2048
+  maximum_instance_count = 10
+
   https_only                                     = true
-  builtin_logging_enabled                        = false
-  client_certificate_mode                        = "Required"
-  ftp_publish_basic_authentication_enabled       = false
   webdeploy_publish_basic_authentication_enabled = false
 
-  # Identidade usada para ler a chave da OpenAI no Key Vault.
+  # Identidade usada pelo código para ler a chave da OpenAI no Key Vault.
   identity {
     type = "SystemAssigned"
   }
 
   site_config {
-    ftps_state                             = "FtpsOnly"
     application_insights_connection_string = azurerm_application_insights.main.connection_string
-    application_insights_key               = azurerm_application_insights.main.instrumentation_key
-
-    application_stack {
-      python_version = "3.11"
-    }
-
-    cors {
-      allowed_origins = ["https://portal.azure.com"]
-    }
   }
+}
 
-  lifecycle {
-    ignore_changes = [
-      # Tags "hidden-link" e sticky settings criadas automaticamente pelo portal para o Application Insights.
-      tags,
-      sticky_settings,
-      # Vazio no recurso importado, equivalente a "Allow".
-      site_config[0].ip_restriction_default_action,
-      site_config[0].scm_ip_restriction_default_action,
-    ]
-  }
+# Chave padrão da função, usada pelo skillset do AI Search no cabeçalho x-functions-key.
+data "azurerm_function_app_host_keys" "embedding" {
+  name                = azurerm_function_app_flex_consumption.embedding.name
+  resource_group_name = azurerm_resource_group.main.name
 }
