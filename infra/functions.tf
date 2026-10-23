@@ -62,6 +62,12 @@ resource "azurerm_function_app_flex_consumption" "chat" {
   }
 }
 
+# Chave padrão da função do chat (guardada no Key Vault em key_vault.tf).
+data "azurerm_function_app_host_keys" "chat" {
+  name                = azurerm_function_app_flex_consumption.chat.name
+  resource_group_name = azurerm_resource_group.main.name
+}
+
 # ---------------------------------------------------------------------------
 # Função de embeddings chamada pelo skillset do AI Search (search/embedding-function/)
 # ---------------------------------------------------------------------------

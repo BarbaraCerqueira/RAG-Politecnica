@@ -24,13 +24,13 @@ terraform apply
 | `versions.tf` | Versões, backend do state e configuração do provider |
 | `main.tf` | Resource group |
 | `storage.tf` | Data Lake (ADLS Gen2) com os containers das camadas, e storage interno das Function Apps |
-| `key_vault.tf` | Key Vault, políticas de acesso e os secrets derivados de outros recursos (URL e chave da embedding-function) |
+| `key_vault.tf` | Key Vault, políticas de acesso e os secrets derivados de outros recursos (URL e chave das Functions do chat e de embeddings) |
 | `sql.tf` | Servidor e banco Azure SQL |
 | `search.tf` | Serviço do Azure AI Search (os objetos internos são criados por `search/setup/`) |
 | `functions.tf` | Function Apps do chat e da embedding-function, no plano Flex Consumption |
 | `web.tf` | Static Web App do frontend |
 | `monitoring.tf` | Log Analytics e Application Insights |
-| `databricks.tf` | Workspace do Databricks, secret scope (Key Vault), Git folder, cluster interativo e job do pipeline |
+| `databricks.tf` | Workspace do Databricks, secret scope (Key Vault), Git folder, cluster interativo, job do pipeline e init script que instala o Tesseract OCR nos clusters |
 | `iam.tf` | Permissões (role assignments) |
 
 ## State remoto
