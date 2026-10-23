@@ -30,7 +30,7 @@ terraform apply
 | `functions.tf` | Function Apps do chat e da função de embeddings |
 | `web.tf` | Static Web App do frontend |
 | `monitoring.tf` | Application Insights |
-| `databricks.tf` | Workspace do Databricks |
+| `databricks.tf` | Workspace do Databricks, secret scope (Key Vault), Git folder, cluster interativo e job do pipeline |
 | `iam.tf` | Permissões (role assignments) |
 
 ## State remoto

@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.80"
     }
+    databricks = {
+      source  = "databricks/databricks"
+      version = "~> 1.136.0"
+    }
   }
 
   # State remoto no storage account dedicado (rg-poligpt-tfstate).
@@ -32,4 +36,11 @@ provider "azurerm" {
 
   # A assinatura de estudante já tem os providers necessários registrados.
   resource_provider_registrations = "none"
+}
+
+# Conteúdo interno do workspace (jobs, clusters, secret scopes), autenticado com o az login.
+provider "databricks" {
+  host                        = "https://${azurerm_databricks_workspace.main.workspace_url}"
+  azure_workspace_resource_id = azurerm_databricks_workspace.main.id
+  auth_type                   = "azure-cli"
 }
