@@ -40,7 +40,7 @@ Execute na ordem abaixo. Todos usam `create_or_update`, então podem ser reexecu
 
 - Python 3.11 com as dependências:
   ```bash
-  pip install azure-search-documents==11.5.2 azure-identity azure-keyvault-secrets
+  pip install azure-search-documents==11.6.0 azure-identity azure-keyvault-secrets
   ```
 - `az login` com acesso de leitura aos secrets do Key Vault `kv-poligpt-dev-eastus2`.
 
@@ -55,6 +55,13 @@ Os scripts leem endpoints e chaves do Key Vault:
 
 > Se a embedding-function for recriada, o Terraform atualiza os dois últimos secrets; depois é preciso rodar `create_skillset.py` novamente para o skillset apontar para a nova função.
 
-## Limitações do plano gratuito
+## Compressão dos vetores e limite do plano gratuito
 
-O plano Free permite 50 MB de armazenamento e 3 índices. O índice atual ocupa praticamente todo o espaço, o que limita a quantidade de documentos indexados.
+O plano Free permite 50 MB de armazenamento e 3 índices. Para caber nesse limite, o campo `vector` usa:
+
+- **Quantização escalar (int8):** o índice vetorial (HNSW) guarda cada dimensão em 1 byte em vez de 4. Os vetores originais são preservados e usados para reordenar os candidatos (*rescoring*, com 4x de *oversampling*), mantendo a qualidade da busca.
+- **`stored=False`:** não guarda uma cópia do vetor para devolver nas consultas, já que a aplicação nunca lê o vetor.
+
+Com 2.564 trechos, essas opções reduziram o índice vetorial de 46,6 MB para 7,9 MB e o total de 59,9 MB para 40,4 MB (out/2026).
+
+> Alterações na configuração de vetores exigem recriar o índice: apagar `poligpt-index`, rodar `create_vector_index.py`, resetar o indexador (`POST /indexers/poligpt-indexer/reset`) e executá-lo de novo. O indexador reprocessa tudo a partir do Azure SQL, sem precisar rodar o pipeline do Databricks.
