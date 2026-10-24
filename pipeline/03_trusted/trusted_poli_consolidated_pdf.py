@@ -35,6 +35,7 @@ input_base_path = "/mnt/adlsraw/pdf/"
 output_path = "/mnt/adlstrusted/poli_consolidated_pdf/"
 checkpoint_path = "/mnt/adlstrusted/checkpoints/poli_consolidated_pdf/"
 num_processes = 4
+max_tasks_per_process = 20           # recria cada processo após N PDFs, devolvendo a memória acumulada pelo MuPDF/Tesseract
 
 # OCR (Tesseract, via PyMuPDF) para páginas sem texto extraível. Uma página passa por OCR quando:
 #   1. o texto existente é ilegível (fontes sem mapeamento Unicode viram o caractere U+FFFD); ou
@@ -43,6 +44,7 @@ num_processes = 4
 # Imagens dentro de páginas digitais comuns (logos, fotos, gráficos) não passam por OCR.
 ocr_language = "por"
 ocr_dpi = 300                        # resolução recomendada para o Tesseract
+ocr_max_megapixels = 25              # limite de tamanho da imagem renderizada para o OCR (A4 a 300 dpi ≈ 8,7 MP)
 ocr_min_chars_per_page = 50          # abaixo disso, a página é considerada sem camada de texto
 ocr_min_image_coverage = 0.1         # ignora páginas sem texto que só têm imagens pequenas (ex.: logo)
 ocr_scanned_image_coverage = 0.8     # fração da página coberta por imagem para considerá-la digitalizada
@@ -91,13 +93,22 @@ def silence_native_stderr():
     os.dup2(devnull, 2)
     os.close(devnull)
 
+# Função para calcular a resolução do OCR de uma página. Páginas cuja imagem a `ocr_dpi` passaria de
+# `ocr_max_megapixels` têm a resolução reduzida até esse limite, já que a memória usada pelo Tesseract cresce com
+# o número de pixels. Isso acontece em digitalizações cujo PDF declara um tamanho de página muito maior que o real.
+def ocr_dpi_for_page(page):
+    megapixels = abs(page.rect) / 72**2 * ocr_dpi**2 / 1e6  # área em pontos (1/72 pol.) -> pixels na resolução desejada
+    if megapixels <= ocr_max_megapixels:
+        return ocr_dpi
+    return int(ocr_dpi * (ocr_max_megapixels / megapixels) ** 0.5)  # os pixels crescem com o quadrado da resolução
+
 # Função para extrair o texto de uma página, aplicando OCR quando necessário
 def extract_page_text(page):
     text = page.get_text("text")
     if not page_needs_ocr(page, text):
         return text, False
     try:
-        textpage = page.get_textpage_ocr(language=ocr_language, dpi=ocr_dpi, full=True)
+        textpage = page.get_textpage_ocr(language=ocr_language, dpi=ocr_dpi_for_page(page), full=True)
         return page.get_text("text", textpage=textpage), True
     except Exception as e:
         print(f"Erro no OCR da página {page.number}: {e}")
@@ -232,7 +243,7 @@ if pdf_files:
     pdf_text_data = []
     ocr_pages_so_far = 0
     start = time.time()
-    with Pool(processes=num_processes, initializer=silence_native_stderr) as pool:
+    with Pool(processes=num_processes, initializer=silence_native_stderr, maxtasksperchild=max_tasks_per_process) as pool:
         for row in pool.imap_unordered(process_pdf, pdf_files):
             pdf_text_data.append(row)
             ocr_pages_so_far += row.ocr_pages
