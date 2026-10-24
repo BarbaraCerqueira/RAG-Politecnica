@@ -22,6 +22,9 @@ locals {
   # Configuração comum dos clusters: single node, DBR 15.4 LTS, sem Unity Catalog (workspace standard).
   cluster_spark_version = "15.4.x-scala2.12"
   cluster_node_type     = "Standard_F4"
+  # O job usa uma VM com os mesmos 4 cores (limite da cota), mas com 32 GB de memória em vez de 8 trusted_poli_consolidated_html
+  # o OCR do Tesseract em vários processos esgota a memória da F4.
+  pipeline_node_type = "Standard_E4ds_v4"
   cluster_spark_conf = {
     "spark.databricks.cluster.profile" = "singleNode"
     "spark.master"                     = "local[*, 4]"
@@ -157,8 +160,8 @@ resource "databricks_job" "pipeline" {
 
     new_cluster {
       spark_version       = local.cluster_spark_version
-      node_type_id        = local.cluster_node_type
-      driver_node_type_id = local.cluster_node_type
+      node_type_id        = local.pipeline_node_type
+      driver_node_type_id = local.pipeline_node_type
       num_workers         = 0
       data_security_mode  = "NONE"
       runtime_engine      = "STANDARD"
