@@ -3,6 +3,7 @@ import { Message } from '../contexts/ChatContext';
 import userAvatar from '../assets/user_avatar.png';
 import assistantAvatar from '../assets/assistant_avatar.png';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessageProps {
   message: Message;
@@ -34,12 +35,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         >
           {message.role === 'assistant' ? (
             <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 p: (props) => (
                   <p className="prose prose-sm dark:prose-invert max-w-none" {...props} />
                 ),
                 a: (props) => (
-                  <a className="text-blue-600 underline dark:text-blue-400" {...props} />
+                  <a className="text-blue-600 underline dark:text-blue-400" target="_blank" rel="noopener noreferrer" {...props} />
                 ),
                 ul: (props) => (
                   <ul className="list-disc pl-6 prose-sm dark:prose-invert" {...props} />
@@ -49,6 +51,17 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 ),
                 li: (props) => (
                   <li className="mb-1" {...props} />
+                ),
+                table: (props) => (
+                  <div className="my-3 overflow-x-auto">
+                    <table className="min-w-full border-collapse text-sm" {...props} />
+                  </div>
+                ),
+                th: (props) => (
+                  <th className="border border-gray-300 dark:border-gray-500 bg-gray-100 dark:bg-gray-600 px-3 py-2 text-left font-semibold" {...props} />
+                ),
+                td: (props) => (
+                  <td className="border border-gray-300 dark:border-gray-500 px-3 py-2 align-top" {...props} />
                 )
               }}
             >

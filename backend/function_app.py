@@ -41,6 +41,11 @@ SEARCH_INDEX_NAME = os.getenv("SEARCH_INDEX_NAME")
 SEARCH_TYPE = os.getenv("SEARCH_TYPE", "hybrid")
 NUM_DOCS_TO_RETRIEVE = int(os.getenv("NUM_DOCS_TO_RETRIEVE", 5))
 
+# Limites das requisições, para conter o custo de cada chamada
+MAX_QUERY_CHARS = 2000
+MAX_HISTORY_MESSAGES = 20
+MAX_HISTORY_MESSAGE_CHARS = 4000
+
 
 # ========================= FUNÇÕES AUXILIARES =======================
 
@@ -159,34 +164,74 @@ def agent_orchestrator(query: str, chat_history: list, session_id: str) -> str:
     return output
 
 
+def validate_request(req_body) -> str | None:
+    """
+    Valida o corpo da requisição e retorna a mensagem de erro, ou None se for válido.
+    """
+    if not isinstance(req_body, dict):
+        return "O corpo da requisição deve ser um objeto JSON."
+
+    query = req_body.get('query')
+    if not isinstance(query, str) or not query.strip():
+        return "O campo 'query' é obrigatório."
+    if len(query) > MAX_QUERY_CHARS:
+        return f"A pergunta deve ter no máximo {MAX_QUERY_CHARS} caracteres."
+
+    chat_history = req_body.get('chat_history', [])
+    if not isinstance(chat_history, list):
+        return "O campo 'chat_history' deve ser uma lista."
+    for msg in chat_history:
+        if (not isinstance(msg, dict) or msg.get("role") not in ("user", "assistant")
+                or not isinstance(msg.get("content"), str)):
+            return "Cada mensagem do histórico deve ter 'role' (user ou assistant) e 'content'."
+
+    return None
+
+def error_response(message: str, status_code: int) -> func.HttpResponse:
+    return func.HttpResponse(
+        json.dumps({"error": message}),
+        mimetype="application/json",
+        status_code=status_code
+    )
+
+
 # ======================== DEFINIÇÃO DO FUNCTION APP =======================
 
 @app.function_name(name="ChatCompletion")
 @app.route(route="chatcompletion", methods=["POST"])
 def chat_completion(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        # Obtém a mensagem do usuário
         req_body = req.get_json()
-        query = req_body.get('query')
-        chat_history = req_body.get('chat_history', [])
-        session_id  = req_body.get('session_id', str(time.time()))
+    except ValueError:
+        return error_response("O corpo da requisição deve ser um JSON válido.", 400)
 
+    validation_error = validate_request(req_body)
+    if validation_error:
+        return error_response(validation_error, 400)
+
+    # Obtém a mensagem do usuário e mantém só as mensagens mais recentes do histórico, truncadas
+    query = req_body['query']
+    chat_history = [
+        {"role": msg["role"], "content": msg["content"][:MAX_HISTORY_MESSAGE_CHARS]}
+        for msg in req_body.get('chat_history', [])[-MAX_HISTORY_MESSAGES:]
+    ]
+    session_id = str(req_body.get('session_id', time.time()))
+
+    try:
         # Executa o orquestrador de mensagens para obter a resposta
         response = agent_orchestrator(
             query=query,
             chat_history=chat_history,
             session_id=session_id
         )
+    except Exception:
+        # O detalhe do erro vai só para o log (Application Insights), não para o cliente
+        logging.exception("Erro ao gerar a resposta do chat")
+        return error_response("Erro interno ao gerar a resposta.", 500)
 
-        # Retorna a resposta e o histórico atualizado
-        return func.HttpResponse(
-            json.dumps({"response": response}),
-            mimetype="application/json",
-            status_code=200
-        )
-    except Exception as e:
-        return func.HttpResponse(
-            f"Erro: {str(e)}",
-            status_code=500
-        )
+    return func.HttpResponse(
+        json.dumps({"response": response}),
+        mimetype="application/json",
+        status_code=200
+    )
 
