@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { sendChatMessage } from '../services/api';
+import { AccessDeniedError, sendChatMessage } from '../services/api';
 
 // Define types for our context
 export interface Message {
@@ -50,7 +49,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // Initialize with a first chat
   useEffect(() => {
     if (!initialized.current && chats.length === 0) {
-      const newChatId = uuidv4();
+      const newChatId = crypto.randomUUID();
       pendingChatId.current = newChatId;
       setCurrentChatId(newChatId);
       initialized.current = true;
@@ -58,7 +57,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [chats.length]);
 
   const newChat = () => {
-    const newChatId = uuidv4();
+    const newChatId = crypto.randomUUID();
     pendingChatId.current = newChatId;
     setCurrentChatId(newChatId);
   };
@@ -164,9 +163,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       appendMessage({ role: 'assistant', content: response.response });
     } catch (error) {
       console.error('Error sending message:', error);
-      appendMessage({ 
-        role: 'assistant', 
-        content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.' 
+      appendMessage({
+        role: 'assistant',
+        content: error instanceof AccessDeniedError
+          ? 'Seu código de acesso não é mais válido. Informe um novo código e tente novamente.'
+          : 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.'
       });
     } finally {
       setIsLoading(false);
